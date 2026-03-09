@@ -1,0 +1,512 @@
+{% extends "base.html" %}
+{% block page_title %}Événements{% endblock %}
+{% block page_sub %}— Organiser, participer, documenter{% endblock %}
+
+{% block content %}
+<style>
+.tabs { display:flex; gap:4px; margin-bottom:24px; background:var(--ink2); border:1px solid var(--border); border-radius:12px; padding:5px; width:fit-content; }
+.tab { padding:8px 18px; border-radius:9px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; color:var(--text2); border:none; background:none; font-family:'DM Sans',sans-serif; }
+.tab.active { background:var(--primary); color:white; box-shadow:0 4px 12px var(--primary-glow); }
+.tab:not(.active):hover { color:var(--text); background:var(--ink3); }
+
+.events-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+
+.ev-card {
+  background:var(--ink2); border:1px solid var(--border); border-radius:var(--radius);
+  overflow:hidden; cursor:pointer; transition:all 0.25s;
+}
+.ev-card:hover { border-color:var(--border2); transform:translateY(-4px); box-shadow:0 16px 40px rgba(0,0,0,0.4); }
+
+.ev-image {
+  height:140px; display:flex; align-items:center; justify-content:center;
+  font-size:52px; opacity:0.6; position:relative;
+  background: var(--bg);
+}
+.ev-image .ev-type-badge {
+  position:absolute; top:12px; left:12px;
+  font-size:10.5px; font-weight:700; padding:4px 10px; border-radius:20px;
+}
+.ev-image .ev-cat-badge {
+  position:absolute; top:12px; right:12px;
+  font-size:10px; font-weight:600; padding:3px 9px; border-radius:20px;
+  background:rgba(0,0,0,0.4); color:rgba(255,255,255,0.7);
+}
+
+.ev-body { padding:16px; }
+.ev-title { font-family:'Syne',sans-serif; font-weight:700; font-size:15px; margin-bottom:6px; }
+.ev-meta { display:flex; gap:12px; margin-bottom:10px; }
+.ev-meta-item { font-size:12px; color:var(--text3); display:flex; align-items:center; gap:4px; }
+.ev-desc { font-size:13px; color:var(--text2); line-height:1.5; margin-bottom:12px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.ev-footer { display:flex; align-items:center; justify-content:space-between; padding-top:12px; border-top:1px solid var(--border); }
+.ev-organizer { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--text2); }
+
+/* Toolkit */
+.toolkit-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; }
+.tk-card { background:var(--ink2); border:1px solid var(--border); border-radius:var(--radius); padding:18px; transition:all 0.2s; cursor:pointer; }
+.tk-card:hover { border-color:var(--border2); transform:translateY(-2px); }
+.tk-cat-badge { display:inline-block; margin-bottom:10px; }
+.tk-title { font-family:'Syne',sans-serif; font-weight:700; font-size:14px; margin-bottom:6px; }
+.tk-desc { font-size:12.5px; color:var(--text2); line-height:1.5; margin-bottom:12px; }
+.tk-meta { display:flex; gap:10px; }
+.tk-meta-item { font-size:11px; color:var(--text3); display:flex; align-items:center; gap:4px; }
+.tk-footer { display:flex; justify-content:flex-end; margin-top:12px; padding-top:10px; border-top:1px solid var(--border); }
+
+/* Compte Rendu card */
+.cr-card { background: linear-gradient(135deg, var(--ink2), rgba(139,92,246,0.08)); border:1px solid rgba(139,92,246,0.3); border-radius:var(--radius); padding:18px; transition:all 0.2s; cursor:pointer; position:relative; overflow:hidden; }
+.cr-card::before { content:''; position:absolute; top:0; right:0; width:80px; height:80px; background:radial-gradient(circle at 100% 0%, rgba(139,92,246,0.15), transparent 70%); }
+.cr-card:hover { border-color:rgba(139,92,246,0.6); transform:translateY(-2px); box-shadow:0 8px 24px rgba(139,92,246,0.15); }
+
+/* Compte Rendu Form Modal */
+.cr-modal { max-width:700px; padding:0; overflow-y:auto; max-height:90vh; }
+.cr-modal-header { padding:24px 28px 0; }
+.cr-modal-title { font-family:'Syne',sans-serif; font-weight:800; font-size:20px; margin-bottom:4px; }
+.cr-modal-subtitle { font-size:13px; color:var(--text3); margin-bottom:20px; }
+.cr-form { padding:0 28px 28px; }
+.cr-section { margin-bottom:22px; }
+.cr-section-title { font-size:10.5px; text-transform:uppercase; letter-spacing:0.1em; color:var(--primary); font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.cr-section-title::after { content:''; flex:1; height:1px; background:rgba(139,92,246,0.2); }
+.cr-grid { display:grid; gap:12px; }
+.cr-grid-2 { grid-template-columns:1fr 1fr; }
+.cr-field { display:flex; flex-direction:column; gap:5px; }
+.cr-label { font-size:12px; font-weight:600; color:var(--text2); }
+.cr-input, .cr-textarea, .cr-select { background:var(--ink3); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:13px; padding:9px 12px; transition:border-color 0.2s; width:100%; box-sizing:border-box; }
+.cr-input:focus, .cr-textarea:focus, .cr-select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-glow); }
+.cr-textarea { resize:vertical; min-height:80px; }
+.cr-select { appearance:none; cursor:pointer; }
+.cr-footer { display:flex; gap:10px; padding-top:18px; border-top:1px solid var(--border); margin-top:4px; }
+.cr-generating { display:flex; align-items:center; gap:8px; color:var(--text3); font-size:13px; }
+.cr-spin { animation:spin 1s linear infinite; display:inline-block; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Event detail modal */
+.ev-modal-image { height:200px; width:100%; display:flex; align-items:center; justify-content:center; font-size:80px; opacity:0.4; }
+.ev-modal-body { padding:24px; }
+.ev-modal-title { font-family:'Syne',sans-serif; font-weight:800; font-size:22px; margin-bottom:8px; }
+.ev-modal-meta { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
+.ev-modal-section { margin-bottom:18px; }
+.ev-modal-section-title { font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text3); font-weight:600; margin-bottom:8px; }
+.ev-modal-desc { font-size:14px; color:var(--text2); line-height:1.6; }
+/* Prevent scroll bleed-through */
+.modal-overlay { overscroll-behavior: contain; overflow: hidden; }
+</style>
+
+<!-- Tabs + Create Button -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('all',this)">Tous</button>
+    <button class="tab" onclick="switchTab('incoming',this)">À venir</button>
+    <button class="tab" onclick="switchTab('past',this)">Passés</button>
+    <button class="tab" onclick="switchTab('toolkit',this)">🧰 Toolkit</button>
+  </div>
+  <a href="/create-event" class="btn btn-primary">＋ Créer un événement</a>
+</div>
+
+<div id="tabContent"></div>
+
+<!-- Event Detail Modal -->
+<div class="modal-overlay" id="eventModal" onclick="closeEventModal()">
+  <div class="modal" style="max-width:640px;padding:0;overflow-y:auto;" onclick="event.stopPropagation()" id="eventModalContent"></div>
+</div>
+
+<!-- Compte Rendu Form Modal -->
+<div class="modal-overlay" id="crModal" onclick="closeCRModal()">
+  <div class="modal cr-modal" onclick="event.stopPropagation()">
+    <div class="cr-modal-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div class="cr-modal-title">📝 Compte Rendu d'Activité</div>
+          <div class="cr-modal-subtitle">Remplissez les informations pour générer et télécharger le rapport Word.</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="closeCRModal()" style="font-size:18px;padding:4px 10px;">✕</button>
+      </div>
+      <div style="height:1px;background:var(--border);margin-bottom:20px;"></div>
+    </div>
+
+    <div class="cr-form">
+      <!-- Section 1 -->
+      <div class="cr-section">
+        <div class="cr-section-title">Section 1 — Informations générales</div>
+        <div class="cr-grid cr-grid-2">
+          <div class="cr-field">
+            <label class="cr-label">Nom de l'ambassadeur *</label>
+            <input class="cr-input" id="cr_ambassadeur" type="text" placeholder="Prénom Nom">
+          </div>
+          <div class="cr-field">
+            <label class="cr-label">Ville *</label>
+            <input class="cr-input" id="cr_ville" type="text" placeholder="Ex: Rabat">
+          </div>
+          <div class="cr-field">
+            <label class="cr-label">Email / contact</label>
+            <input class="cr-input" id="cr_email" type="email" placeholder="email@exemple.com">
+          </div>
+          <div class="cr-field">
+            <label class="cr-label">Date du rapport *</label>
+            <input class="cr-input" id="cr_date_rapport" type="date">
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2 -->
+      <div class="cr-section">
+        <div class="cr-section-title">Section 2 — Informations sur l'activité</div>
+        <div class="cr-grid cr-grid-2">
+          <div class="cr-field" style="grid-column:1/-1;">
+            <label class="cr-label">Nom de l'événement / activité *</label>
+            <input class="cr-input" id="cr_nom_evenement" type="text" placeholder="Ex: Café Citoyen – Marrakech">
+          </div>
+          <div class="cr-field">
+            <label class="cr-label">Date de l'événement *</label>
+            <input class="cr-input" id="cr_date_evenement" type="date">
+          </div>
+          <div class="cr-field">
+            <label class="cr-label">Lieu de l'activité *</label>
+            <input class="cr-input" id="cr_lieu" type="text" placeholder="Ex: Maison des jeunes, Marrakech">
+          </div>
+          <div class="cr-field" style="grid-column:1/-1;">
+            <label class="cr-label">Type d'activité</label>
+            <select class="cr-select" id="cr_type_activite">
+              <option value="">— Choisir —</option>
+              <option>Café Citoyen</option>
+              <option>Rencontre citoyenne</option>
+              <option>Atelier</option>
+              <option>Formation</option>
+              <option>Réunion</option>
+              <option>Autre</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3 -->
+      <div class="cr-section">
+        <div class="cr-section-title">Section 3 — Objectif de l'activité</div>
+        <div class="cr-field">
+          <label class="cr-label">Quel était l'objectif de l'activité ?</label>
+          <textarea class="cr-textarea" id="cr_objectif" placeholder="Ex: sensibiliser les jeunes, encourager la participation citoyenne, créer un espace de discussion…"></textarea>
+        </div>
+      </div>
+
+      <!-- Section 4 -->
+      <div class="cr-section">
+        <div class="cr-section-title">Section 4 — Participants</div>
+        <div class="cr-grid cr-grid-2">
+          <div class="cr-field">
+            <label class="cr-label">Nombre de participants</label>
+            <input class="cr-input" id="cr_nb_participants" type="number" placeholder="Ex: 45" min="0">
+          </div>
+          <div class="cr-field">
+            <label class="cr-label">Profil des participants</label>
+            <input class="cr-input" id="cr_profil_participants" type="text" placeholder="Ex: jeunes, étudiants, associations…">
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 5 -->
+      <div class="cr-section">
+        <div class="cr-section-title">Section 5 — Description de l'activité</div>
+        <div class="cr-field">
+          <label class="cr-label">Décrivez brièvement le déroulement</label>
+          <textarea class="cr-textarea" id="cr_description" style="min-height:100px;" placeholder="Principales étapes, discussions, interventions…"></textarea>
+        </div>
+      </div>
+
+      <!-- Section 6 -->
+      <div class="cr-section">
+        <div class="cr-section-title">Section 6 — Résultats et impact</div>
+        <div class="cr-field">
+          <label class="cr-label">Quels ont été les résultats ou l'impact ?</label>
+          <textarea class="cr-textarea" id="cr_resultats" placeholder="Ex: sensibilisation, idées d'initiatives, dynamique d'engagement…"></textarea>
+        </div>
+      </div>
+
+      <!-- Section 7 -->
+      <div class="cr-section">
+        <div class="cr-section-title">Section 7 — Difficultés rencontrées</div>
+        <div class="cr-field">
+          <label class="cr-label">Avez-vous rencontré des difficultés ?</label>
+          <textarea class="cr-textarea" id="cr_difficultes" placeholder="Ex: logistique, participation, ressources…"></textarea>
+        </div>
+      </div>
+
+      <!-- Section 8 -->
+      <div class="cr-section">
+        <div class="cr-section-title">Section 8 — Prochaines actions</div>
+        <div class="cr-field">
+          <label class="cr-label">Quelles sont les prochaines actions prévues ?</label>
+          <textarea class="cr-textarea" id="cr_prochaines_actions" placeholder="Ex: organiser un suivi, contacter les partenaires…"></textarea>
+        </div>
+      </div>
+
+      <!-- Section 9 -->
+      <div class="cr-section">
+        <div class="cr-section-title">Section 9 — Photos / preuves</div>
+        <div class="cr-field">
+          <label class="cr-label">Lien vers photos ou documents</label>
+          <input class="cr-input" id="cr_lien_photos" type="url" placeholder="https://drive.google.com/…">
+        </div>
+      </div>
+
+      <div class="cr-footer">
+        <button class="btn btn-primary" style="flex:1;" onclick="generateRapport()" id="cr_submit_btn">
+          📄 Générer et télécharger le rapport
+        </button>
+        <button class="btn btn-ghost" onclick="closeCRModal()">Annuler</button>
+      </div>
+      <div id="cr_status" style="display:none;margin-top:10px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let allEvents = [];
+let allToolkit = [];
+let currentTab = 'all';
+
+const EV_COLORS = {
+  'forum':'linear-gradient(135deg,#1e1b4b,#4c1d95)',
+  'hackathon':'linear-gradient(135deg,#0f172a,#1e3a5f)',
+  'atelier':'linear-gradient(135deg,#052e16,#064e3b)',
+  'caravane':'linear-gradient(135deg,#431407,#7c2d12)',
+  'plaidoyer':'linear-gradient(135deg,#1c1917,#292524)',
+  'marathon':'linear-gradient(135deg,#052e16,#14532d)',
+};
+const EV_EMOJI = {'forum':'🏛️','hackathon':'💻','atelier':'📚','caravane':'🎭','plaidoyer':'⚖️','marathon':'🏃'};
+
+const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+
+function renderEvents(events) {
+  if(!events.length) return '<div style="text-align:center;color:var(--text3);padding:60px;">Aucun événement</div>';
+  return `<div class="events-grid">${events.map(e => {
+    const d = new Date(e.date);
+    const incoming = e.type==='incoming';
+    return `<div class="ev-card" onclick="openEvent(${e.id})">
+      <div class="ev-image" style="${e.image_url ? '' : 'background:'+( EV_COLORS[e.image]||'var(--ink3)')}">
+        ${e.image_url
+        ? `<img src="${e.image_url}" style="width:100%;height:100%;object-fit:cover;opacity:1;">`
+        : (EV_EMOJI[e.image]||'🎯')}
+        <div class="ev-type-badge ${incoming?'badge-green':'badge-purple'}">${incoming?'À venir':'Passé'}</div>
+        <div class="ev-cat-badge">${e.category==='org'?'🏛️ Organisation':'🤝 Ambassadeur'}</div>
+      </div>
+      <div class="ev-body">
+        <div class="ev-title">${e.title}</div>
+        <div class="ev-meta">
+          <span class="ev-meta-item">📅 ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}</span>
+          <span class="ev-meta-item">📍 ${e.location}</span>
+        </div>
+        <div class="ev-desc">${e.description}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">${e.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+        <div class="ev-footer">
+          <div class="ev-organizer">
+            ${avatarHTML(e.organizer_image||null, e.organizer.split(' ').map(n=>n[0]).join('').slice(0,2), 'var(--primary)', 'av-sm')}
+            ${e.organizer}
+          </div>
+          <span style="font-size:12px;color:var(--text3);">👥 ${e.attendees}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderToolkit(items) {
+  const CATCOLORS = {'Icebreakers':'badge-cyan','Animation':'badge-purple','Questions':'badge-amber','Procédures':'badge-green'};
+  const regularCards = items.map(t => `
+    <div class="tk-card">
+      <span class="badge ${CATCOLORS[t.category]||'badge-purple'} tk-cat-badge">${t.category}</span>
+      <div class="tk-title">${t.title}</div>
+      <div class="tk-desc">${t.description}</div>
+      <div class="tk-meta">
+        <span class="tk-meta-item">⏱ ${t.duration}</span>
+        <span class="tk-meta-item">👥 ${t.participants}</span>
+      </div>
+      <div class="tk-footer">
+        <button class="btn btn-ghost btn-sm">⬇ Télécharger</button>
+      </div>
+    </div>`).join('');
+
+  const crCard = `
+    <div class="cr-card" onclick="openCRModal()">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;">
+        <span class="badge badge-purple" style="font-size:10.5px;">📝 Rapport d'activité</span>
+        <span style="font-size:22px;opacity:0.6;">📄</span>
+      </div>
+      <div class="tk-title" style="font-size:15px;margin-bottom:8px;">Générer un Compte Rendu</div>
+      <div class="tk-desc">Remplissez le formulaire interactif pour créer et télécharger automatiquement votre rapport d'activité en format Word (.docx), prêt à soumettre.</div>
+      <div class="tk-meta" style="margin-bottom:14px;">
+        <span class="tk-meta-item">📋 9 sections</span>
+        <span class="tk-meta-item">⬇ Format .docx</span>
+      </div>
+      <div class="tk-footer">
+        <button class="btn btn-primary btn-sm" onclick="openCRModal(); event.stopPropagation();">✍️ Remplir et télécharger</button>
+      </div>
+    </div>`;
+
+  return `<div class="toolkit-grid">${crCard}${regularCards}</div>`;
+}
+
+function openCRModal() {
+  // Pre-fill today's date for rapport date
+  const today = new Date().toISOString().split('T')[0];
+  const dateRapportField = document.getElementById('cr_date_rapport');
+  if (dateRapportField && !dateRapportField.value) dateRapportField.value = today;
+  document.getElementById('crModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeCRModal() {
+  document.getElementById('crModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+async function generateRapport() {
+  const btn = document.getElementById('cr_submit_btn');
+  const status = document.getElementById('cr_status');
+
+  // Collect form data
+  const data = {
+    ambassadeur: document.getElementById('cr_ambassadeur').value.trim(),
+    ville: document.getElementById('cr_ville').value.trim(),
+    email: document.getElementById('cr_email').value.trim(),
+    date_rapport: document.getElementById('cr_date_rapport').value,
+    nom_evenement: document.getElementById('cr_nom_evenement').value.trim(),
+    date_evenement: document.getElementById('cr_date_evenement').value,
+    lieu: document.getElementById('cr_lieu').value.trim(),
+    type_activite: document.getElementById('cr_type_activite').value,
+    objectif: document.getElementById('cr_objectif').value.trim(),
+    nb_participants: document.getElementById('cr_nb_participants').value,
+    profil_participants: document.getElementById('cr_profil_participants').value.trim(),
+    description: document.getElementById('cr_description').value.trim(),
+    resultats: document.getElementById('cr_resultats').value.trim(),
+    difficultes: document.getElementById('cr_difficultes').value.trim(),
+    prochaines_actions: document.getElementById('cr_prochaines_actions').value.trim(),
+    lien_photos: document.getElementById('cr_lien_photos').value.trim(),
+  };
+
+  // Basic validation
+  if (!data.ambassadeur || !data.ville || !data.nom_evenement) {
+    status.style.display = 'block';
+    status.innerHTML = '<span style="color:#f87171;">⚠️ Veuillez remplir les champs obligatoires (Ambassadeur, Ville, Nom de l\'événement).</span>';
+    return;
+  }
+
+  // Show loading state
+  btn.disabled = true;
+  btn.innerHTML = '<span class="cr-spin">⏳</span> Génération en cours…';
+  status.style.display = 'none';
+
+  try {
+    const response = await fetch('/api/generate-rapport', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) throw new Error('Erreur serveur');
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rapport_${data.ville.replace(/\s+/g,'_')}_${data.date_evenement||'activite'}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    status.style.display = 'block';
+    status.innerHTML = '<span style="color:#4ade80;">✅ Rapport téléchargé avec succès !</span>';
+    btn.innerHTML = '✅ Rapport généré';
+
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = '📄 Générer et télécharger le rapport';
+    }, 3000);
+
+  } catch (err) {
+    status.style.display = 'block';
+    status.innerHTML = '<span style="color:#f87171;">❌ Une erreur s\'est produite. Veuillez réessayer.</span>';
+    btn.disabled = false;
+    btn.innerHTML = '📄 Générer et télécharger le rapport';
+  }
+}
+
+function switchTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderTab();
+}
+
+function renderTab() {
+  const content = document.getElementById('tabContent');
+  if(currentTab === 'toolkit') {
+    content.innerHTML = renderToolkit(allToolkit);
+  } else {
+    const filtered = currentTab === 'all' ? allEvents : allEvents.filter(e=>e.type===currentTab);
+    content.innerHTML = renderEvents(filtered);
+  }
+  // Animate
+  setTimeout(() => {
+    document.querySelectorAll('.ev-card,.tk-card').forEach((c,i)=>{
+      c.style.animationDelay=(i*0.04)+'s'; c.classList.add('fade-up');
+    });
+  },10);
+}
+
+function openEvent(id) {
+  const e = allEvents.find(ev=>ev.id===id);
+  if(!e) return;
+  const d = new Date(e.date);
+  document.getElementById('eventModalContent').innerHTML = `
+    <div class="ev-modal-image" style="${e.image_url ? 'padding:0;overflow:hidden;' : 'background:'+(EV_COLORS[e.image]||'var(--ink3)')}">
+  ${e.image_url
+    ? `<img src="${e.image_url}" style="width:100%;height:100%;object-fit:cover;">`
+    : (EV_EMOJI[e.image]||'🎯')}
+    </div>
+    <div class="ev-modal-body">
+      <div class="ev-modal-title">${e.title}</div>
+      <div class="ev-modal-meta">
+        <span class="badge ${e.type==='incoming'?'badge-green':'badge-purple'}">${e.type==='incoming'?'À venir':'Passé'}</span>
+        <span class="badge badge-cyan">📅 ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}</span>
+        <span class="badge badge-amber">📍 ${e.location}</span>
+        <span class="badge badge-purple">👥 ${e.attendees} participants</span>
+      </div>
+      <div class="ev-modal-section">
+        <div class="ev-modal-section-title">Description</div>
+        <div class="ev-modal-desc">${e.description}</div>
+      </div>
+      ${e.report ? `<div class="ev-modal-section">
+        <div class="ev-modal-section-title">Rapport</div>
+        <div class="ev-modal-desc">${e.report}</div>
+      </div>` : ''}
+      <div class="ev-modal-section">
+        <div class="ev-modal-section-title">Organisateur</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          ${avatarHTML(e.organizer_image||null, e.organizer.split(' ').map(n=>n[0]).join('').slice(0,2), 'var(--primary)', 'av-md')}
+          <span style="font-size:14px;color:var(--text);">${e.organizer}</span>
+        </div>
+      </div>
+      <div class="ev-modal-section">
+        <div class="ev-modal-section-title">Tags</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">${e.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+      </div>
+      ${e.driveLink ? `<div class="ev-modal-section">
+        <div class="ev-modal-section-title">Médias</div>
+        <a href="${e.driveLink}" target="_blank" class="btn btn-ghost btn-sm">📁 Voir les photos sur Drive</a>
+      </div>` : ''}
+      <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+        ${e.type==='incoming' ? `<button class="btn btn-primary" style="flex:1;">✅ Participer</button>` : ''}
+        <button class="btn btn-ghost" onclick="closeEventModal()" style="flex:1;">Fermer</button>
+      </div>
+    </div>`;
+  document.getElementById('eventModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeEventModal() {
+  document.getElementById('eventModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Load data
+Promise.all([fetch('/api/events').then(r=>r.json()), fetch('/api/toolkit').then(r=>r.json())])
+  .then(([evts, tk]) => { allEvents=evts; allToolkit=tk; renderTab(); });
+</script>
+{% endblock %}

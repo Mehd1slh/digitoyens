@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Les Citoyens — Connexion</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root {
+  /* New Light Theme Backgrounds */
+  --ink: #FFFFFF;      
+  --ink2: #F8F9FA;     
+  --ink3: #F1F5F9;     
+  --surface: #FFFFFF;
+  
+  /* New Darker Borders & Text for visibility */
+  --border: rgba(0,0,0,0.1);
+  --border2: rgba(0,0,0,0.15);
+  --text: #0F172A;     
+  --text2: #475569;    
+  --text3: #94A3B8;    
+
+  /* Keep your existing vibrant colors */
+  --primary: #722d50;
+  --primary-light: #722d50;
+  --primary-glow: rgba(124,58,237,0.2);
+  --accent: #F97316;
+  --accent2: #06B6D4;
+  --green: #10B981;
+  --red: #EF4444;
+  --amber: #F59E0B;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --radius-lg: 20px;
+  --sidebar-w: 240px;
+  --transition: cubic-bezier(0.4, 0, 0.2, 1);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--ink);color:var(--text);min-height:100vh;display:flex;overflow:hidden;}
+
+/* LEFT PANEL */
+.left{
+  flex:1;background:#FFFFFF;
+  display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
+  padding:60px 70px;position:relative;overflow:hidden;
+}
+.left::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 30% 70%,rgba(124,58,237,0.2),transparent);
+  pointer-events:none;
+}
+.left::after{
+  content:'';position:absolute;
+  width:400px;height:400px;
+  background:radial-gradient(circle,rgba(6,182,212,0.08),transparent 70%);
+  top:-100px;right:-100px;border-radius:50%;
+}
+
+.brand{display:flex;align-items:center;gap:14px;margin-bottom:60px;position:relative;z-index:1;}
+.brand-mark{
+  width:48px;height:48px;
+  background:linear-gradient(135deg,var(--primary),var(--primary-light));
+  border-radius:14px;display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:white;
+  box-shadow:0 8px 24px var(--primary-glow);
+}
+.brand-name{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;}
+
+.hero-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 52px; /* 42px in the ambassador file */
+  line-height: 1.1;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+  /* 👇 New dark text gradient */
+  background: linear-gradient(135deg, #722d50 30%, #475569);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero-sub{font-size:16px;color:var(--text2);line-height:1.6;max-width:400px;margin-bottom:40px;position:relative;z-index:1;}
+
+.stats{display:flex;gap:32px;position:relative;z-index:1;}
+.stat-num{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:var(--primary-light);}
+.stat-lbl{font-size:12px;color:var(--text3);margin-top:2px;}
+
+
+
+/* RIGHT PANEL */
+.right{
+  width:480px;min-height:100vh;
+  background:var(--ink2);border-left:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;padding:48px;
+}
+
+.login-box{width:100%;}
+.login-title{font-family:'Syne',sans-serif;font-weight:700;font-size:26px;margin-bottom:6px;}
+.login-sub{font-size:14px;color:var(--text2);margin-bottom:36px;}
+
+.input-group{margin-bottom:18px;}
+.input-group label{display:block;font-size:11.5px;font-weight:600;color:var(--text2);margin-bottom:7px;text-transform:uppercase;letter-spacing:0.06em;}
+.input{
+  width:100%;padding:12px 16px;
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14.5px;
+  outline:none;transition:all 0.2s;
+}
+.input:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow);}
+.input::placeholder{color:var(--text3);}
+
+.btn-login{
+  width:100%;padding:13px;
+  background:var(--primary);color:white;
+  border:none;border-radius:10px;
+  font-family:'Syne',sans-serif;font-weight:700;font-size:15px;
+  cursor:pointer;transition:all 0.2s;margin-top:8px;
+  box-shadow:0 6px 20px var(--primary-glow);letter-spacing:0.03em;
+}
+.btn-login:hover{background:var(--primary-light);transform:translateY(-2px);box-shadow:0 10px 28px var(--primary-glow);}
+.btn-login:active{transform:translateY(0);}
+
+.divider{display:flex;align-items:center;gap:12px;margin:24px 0;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.divider span{font-size:12px;color:var(--text3);}
+
+
+
+.btn-become{
+  display:flex;align-items:center;gap:14px;padding:14px 18px;
+  background:rgba(255,255,255,0.03);border:1px solid var(--border2);
+  border-radius:12px;cursor:pointer;transition:all 0.25s;text-decoration:none;
+  color:var(--text);width:100%;
+}
+.btn-become:hover{
+  border-color:var(--primary);
+  background:rgba(124,58,237,0.1);
+  transform:translateY(-2px);
+  box-shadow:0 8px 24px var(--primary-glow);
+}
+
+/* Animated bg dots */
+.bg-dots{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0;}
+.dot{position:absolute;border-radius:50%;animation:drift linear infinite;opacity:0.15;}
+@keyframes drift{0%{transform:translateY(100vh) rotate(0deg);}100%{transform:translateY(-100px) rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="bg-dots" id="bgDots"></div>
+
+<div class="left">
+  <div class="brand">
+    <img src="{{ url_for('static', filename='logo.png') }}" 
+         alt="Les Citoyens" 
+         style="height:130px; width:auto; object-fit:contain; display:block;">
+  </div>
+
+  <h1 class="hero-title">Home of<br>Ambassadors</h1>
+  <p class="hero-sub">La plateforme centrale pour les ambassadeurs de l'association Les Citoyens — connectez, organisez, apprenez.</p>
+
+  <div class="stats">
+    <div><div class="stat-num">150+</div><div class="stat-lbl">Ambassadeurs</div></div>
+    <div><div class="stat-num">12</div><div class="stat-lbl">Régions</div></div>
+    <div><div class="stat-num">300+</div><div class="stat-lbl">Événements</div></div>
+  </div>
+
+
+</div>
+
+<div class="right">
+  <div class="login-box">
+    <h2 class="login-title">Bon retour!</h2>
+    <p class="login-sub">Connectez-vous à votre espace ambassadeur</p>
+
+    <div class="input-group">
+      <label>Email</label>
+      <input class="input" type="email" placeholder="votre@email.com" value="karim.alaoui@lescitoyens.org">
+    </div>
+    <div class="input-group">
+      <label>Mot de passe</label>
+      <input class="input" type="password" placeholder="••••••••" value="••••••••">
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:-8px;margin-bottom:20px;">
+      <a href="#" style="font-size:12.5px;color:var(--primary-light);text-decoration:none;">Mot de passe oublié?</a>
+    </div>
+
+    <button class="btn-login" onclick="handleLogin()">Se connecter →</button>
+
+    <div class="divider"><span>Pas encore membre?</span></div>
+
+    <a href="/devenir-ambassadeur" class="btn-become"> 
+      <div>
+        <div style="font-size:14px;font-weight:700;">Devenir Ambassadeur</div>
+        <div style="font-size:11.5px;opacity:0.7;margin-top:1px;">Rejoignez le réseau Les Citoyens</div>
+      </div>
+      <span style="margin-left:auto;font-size:18px;">→</span>
+    </a>
+  </div>
+</div>
+
+<script>
+// Login routing
+function handleLogin() {
+  const email = document.querySelector('input[type="email"]').value.trim().toLowerCase();
+  if (email === 'admin@example.com') {
+    window.location = '/admin';
+  } else {
+    window.location = '/dashboard';
+  }
+}
+
+// Also allow Enter key to trigger login
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') handleLogin();
+});
+
+// Animated background dots
+const bg = document.getElementById('bgDots');
+for(let i=0;i<20;i++){
+  const d=document.createElement('div');d.className='dot';
+  const size=Math.random()*6+3;
+  d.style.cssText=`width:${size}px;height:${size}px;left:${Math.random()*100}%;
+    background:${Math.random()>0.5?'#722d50':'#06B6D4'};
+    animation-duration:${Math.random()*20+15}s;
+    animation-delay:-${Math.random()*20}s;opacity:${Math.random()*0.15+0.05};`;
+  bg.appendChild(d);
+}
+</script>
+</body>
+</html>

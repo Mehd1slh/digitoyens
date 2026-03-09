@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block page_title %}Opportunités{% endblock %}
+{% block page_sub %}— Formations, échanges & financements{% endblock %}
+
+{% block content %}
+<style>
+.opp-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px; }
+.opp-card { background:var(--ink2);border:1px solid var(--border);border-radius:var(--radius);padding:22px;cursor:pointer;transition:all 0.25s;position:relative;overflow:hidden; }
+.opp-card:hover { border-color:var(--border2);transform:translateY(-3px);box-shadow:0 14px 36px rgba(0,0,0,0.4); }
+.opp-card::before { content:'';position:absolute;top:-30px;right:-30px;width:100px;height:100px;border-radius:50%;opacity:0.07;background:var(--primary); }
+.opp-header { display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px; }
+.opp-title { font-family:'Syne',sans-serif;font-weight:700;font-size:15.5px;margin-bottom:4px;line-height:1.3; }
+.opp-partner { font-size:11.5px;color:var(--text3); }
+.opp-deadline { text-align:right; }
+.opp-deadline-label { font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3); }
+.opp-deadline-date { font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--amber); }
+.opp-desc { font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px; }
+.opp-footer { display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border); }
+.opp-location { font-size:12px;color:var(--text3); }
+</style>
+
+<div style="display:flex;justify-content:flex-end;margin-bottom:20px;">
+  <div style="display:flex;gap:8px;">
+    <button class="btn btn-ghost btn-sm" onclick="filterOpp('all',this)" style="border-color:var(--primary);color:var(--primary-light);">Toutes</button>
+    <button class="btn btn-ghost btn-sm" onclick="filterOpp('incoming',this)">À venir</button>
+    <button class="btn btn-ghost btn-sm" onclick="filterOpp('past',this)">Passées</button>
+  </div>
+</div>
+
+<div class="opp-grid" id="oppGrid"></div>
+
+<script>
+let allOpps = [];
+function filterOpp(type, el) {
+  document.querySelectorAll('.opp-grid + div button, [onclick*="filterOpp"]').forEach(b => {
+    b.style.borderColor='var(--border)';b.style.color='var(--text2)';
+  });
+  el.style.borderColor='var(--primary)';el.style.color='var(--primary-light)';
+  const data = type==='all' ? allOpps : allOpps.filter(o=>o.type===type);
+  renderOpps(data);
+}
+function renderOpps(opps) {
+  document.getElementById('oppGrid').innerHTML = opps.map(o => `
+    <div class="opp-card fade-up">
+      <div class="opp-header">
+        <div>
+          <div class="opp-title">${o.title}</div>
+          <div class="opp-partner">🤝 ${o.partner}</div>
+        </div>
+        <div class="opp-deadline">
+          <div class="opp-deadline-label">Deadline</div>
+          <div class="opp-deadline-date" style="${o.type==='past'?'color:var(--text3);text-decoration:line-through;':''}">${new Date(o.deadline).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</div>
+        </div>
+      </div>
+      <div class="opp-desc">${o.description}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;">${o.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+      <div class="opp-footer">
+        <span class="opp-location">📍 ${o.location}</span>
+        ${o.type==='incoming' ? `<button class="btn btn-primary btn-sm">Candidater →</button>` : `<span class="badge badge-purple">Clôturé</span>`}
+      </div>
+    </div>`).join('');
+}
+fetch('/api/opportunities').then(r=>r.json()).then(data => { allOpps=data; renderOpps(data); });
+</script>
+{% endblock %}

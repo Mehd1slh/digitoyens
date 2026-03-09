@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Les Citoyens — Admin Console</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --ink:#FFFFFF;
+  --ink2:#F8F9FA;
+  --ink3:#F1F5F9;
+  --ink4:#E2E8F0;
+  --border:rgba(0,0,0,0.08);
+  --border2:rgba(0,0,0,0.14);
+  --text:#0F172A;
+  --text2:#475569;
+  --text3:#94A3B8;
+  --primary:#722d50;
+  --primary-light:#9B3D6A;
+  --primary-glow:rgba(114,45,80,0.2);
+  --cyan:#06B6D4;
+  --amber:#F59E0B;
+  --green:#10B981;
+  --red:#EF4444;
+  --violet:#8B5CF6;
+  --sidebar-w:260px;
+  --radius:14px;
+  --radius-sm:8px;
+  --radius-lg:20px;
+  --t:cubic-bezier(0.4,0,0.2,1);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--ink);color:var(--text);min-height:100vh;display:flex;overflow-x:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--sidebar-w);min-height:100vh;
+  background:var(--ink2);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:fixed;left:0;top:0;bottom:0;z-index:100;
+  overflow:hidden;
+}
+.sidebar-logo{
+  padding:5px 5px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  min-height:82px;
+}
+.logo-img{max-width:200px;max-height:70px;width:auto;height:auto;object-fit:contain;display:block;}
+.admin-badge-bar{
+  display:flex;align-items:center;justify-content:center;
+  padding:6px 12px;background:rgba(114,45,80,0.08);
+  border-bottom:1px solid rgba(114,45,80,0.15);
+}
+.admin-badge-label{
+  font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--primary);
+}
+
+.sidebar-nav{flex:1;padding:16px 12px;overflow-y:auto;}
+.nav-section-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--text3);padding:0 8px;margin:16px 0 6px;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-radius:10px;cursor:pointer;transition:all 0.2s var(--t);
+  margin-bottom:2px;text-decoration:none;color:var(--text2);font-size:13.5px;
+  position:relative;
+}
+.nav-item:hover{background:var(--ink3);color:var(--text);}
+.nav-item.active{background:linear-gradient(90deg,rgba(114,45,80,0.25),rgba(114,45,80,0.08));color:var(--text);border:1px solid rgba(114,45,80,0.3);}
+.nav-item.active::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:3px;background:var(--primary-light);border-radius:0 3px 3px 0;}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.nav-badge{margin-left:auto;background:var(--primary);color:white;font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;}
+.nav-badge.amber{background:var(--amber);color:#000;}
+.nav-badge.green{background:var(--green);color:#000;}
+
+.sidebar-footer{padding:16px;border-top:1px solid var(--border);}
+.admin-profile{display:flex;align-items:center;gap:10px;}
+.admin-av{
+  width:34px;height:34px;border-radius:8px;
+  background:linear-gradient(135deg,var(--primary),var(--violet));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:12px;color:white;
+}
+.admin-name{font-size:12.5px;font-weight:600;color:var(--text);}
+.admin-role{font-size:10.5px;color:var(--text3);}
+.logout-btn{margin-left:auto;font-size:11px;color:var(--text3);cursor:pointer;padding:4px 8px;border-radius:6px;transition:all 0.2s;}
+.logout-btn:hover{color:var(--red);background:rgba(239,68,68,0.1);}
+
+/* ── MAIN ── */
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;overflow-y:auto;background:var(--ink);}
+.topbar{
+  padding:18px 32px;border-bottom:1px solid rgba(255,255,255,0.1);
+  display:flex;align-items:center;justify-content:space-between;
+  background:#722d50;backdrop-filter:blur(10px);
+  position:sticky;top:0;z-index:50;
+}
+.page-title{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff;}
+.page-breadcrumb{font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px;}
+.topbar-actions{display:flex;align-items:center;gap:12px;}
+.topbar-btn{
+  padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.25);
+  background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.9);font-size:12.5px;cursor:pointer;
+  transition:all 0.2s;display:flex;align-items:center;gap:6px;
+}
+.topbar-btn:hover{border-color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.2);}
+.topbar-btn.primary-btn{background:rgba(255,255,255,0.2);color:white;border-color:rgba(255,255,255,0.4);}
+.topbar-btn.primary-btn:hover{background:rgba(255,255,255,0.3);}
+.notif-bell{position:relative;cursor:pointer;padding:8px;border-radius:8px;transition:background 0.2s;color:white;font-size:16px;}
+.notif-bell:hover{background:rgba(255,255,255,0.15);}
+.notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--red);border-radius:50%;border:2px solid #722d50;}
+
+/* ── CONTENT ── */
+.content{padding:28px 32px;}
+.section{display:none;}
+.section.active{display:block;}
+
+/* ── STAT GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+.kpi-card{
+  background:var(--ink2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px 22px;
+  position:relative;overflow:hidden;
+  transition:all 0.25s var(--t);
+}
+.kpi-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.kpi-card::after{
+  content:'';position:absolute;inset:0;
+  opacity:0;transition:opacity 0.25s;
+}
+.kpi-card:hover::after{opacity:1;}
+.kpi-glow-violet::after{background:radial-gradient(ellipse at 100% 0%,rgba(139,92,246,0.1),transparent 60%);}
+.kpi-glow-primary::after{background:radial-gradient(ellipse at 100% 0%,rgba(114,45,80,0.15),transparent 60%);}
+.kpi-glow-cyan::after{background:radial-gradient(ellipse at 100% 0%,rgba(6,182,212,0.1),transparent 60%);}
+.kpi-glow-amber::after{background:radial-gradient(ellipse at 100% 0%,rgba(245,158,11,0.1),transparent 60%);}
+.kpi-icon{font-size:22px;margin-bottom:12px;}
+.kpi-val{font-family:'Syne',sans-serif;font-weight:800;font-size:32px;line-height:1;margin-bottom:4px;}
+.kpi-lbl{font-size:12px;color:var(--text2);}
+.kpi-change{font-size:11px;margin-top:8px;display:flex;align-items:center;gap:4px;}
+.up{color:var(--green);}
+.dn{color:var(--red);}
+.kpi-sparkline{position:absolute;bottom:0;right:0;width:80px;height:40px;opacity:0.4;}
+
+/* ── CHARTS GRID ── */
+.charts-row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px;}
+.chart-card{background:var(--ink2);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;overflow:hidden;}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.chart-title{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;}
+.chart-pill{font-size:10.5px;color:var(--text3);background:var(--ink3);border:1px solid var(--border);padding:3px 10px;border-radius:20px;cursor:pointer;}
+.chart-pill.active-pill{color:var(--primary-light);border-color:var(--primary);}
+
+/* ── TABLES ── */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;}
+.search-bar{
+  padding:8px 14px;border-radius:8px;border:1px solid var(--border);
+  background:var(--ink3);color:var(--text);font-size:13px;outline:none;
+  width:220px;transition:border-color 0.2s;
+}
+.search-bar:focus{border-color:var(--primary);}
+.search-bar::placeholder{color:var(--text3);}
+.filter-tabs{display:flex;gap:4px;background:var(--ink3);border-radius:10px;padding:4px;}
+.ftab{font-size:12px;padding:5px 12px;border-radius:7px;cursor:pointer;color:var(--text2);transition:all 0.2s;}
+.ftab.active-tab{background:var(--primary);color:white;}
+.table-wrap{background:var(--ink2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+table{width:100%;border-collapse:collapse;}
+thead tr{background:var(--ink3);}
+th{padding:11px 16px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);}
+tbody tr{border-top:1px solid var(--border);transition:background 0.15s;cursor:pointer;}
+tbody tr:hover{background:var(--ink3);}
+td{padding:13px 16px;font-size:13px;vertical-align:middle;}
+
+/* ── AVATARS ── */
+.av{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:11px;color:white;flex-shrink:0;}
+.av-lg{width:40px;height:40px;font-size:14px;border-radius:10px;}
+.av-info{display:flex;align-items:center;gap:10px;}
+.av-name{font-size:13px;font-weight:600;}
+.av-email{font-size:11px;color:var(--text3);}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:600;}
+.badge-admin{background:rgba(114,45,80,0.2);color:#D4748E;border:1px solid rgba(114,45,80,0.3);}
+.badge-mentor{background:rgba(139,92,246,0.2);color:#A78BFA;border:1px solid rgba(139,92,246,0.3);}
+.badge-ambassador{background:rgba(6,182,212,0.15);color:#67E8F9;border:1px solid rgba(6,182,212,0.2);}
+.badge-inactive{background:rgba(80,90,110,0.2);color:var(--text3);border:1px solid var(--border);}
+.badge-pending{background:rgba(245,158,11,0.15);color:#FCD34D;border:1px solid rgba(245,158,11,0.25);}
+.badge-approved{background:rgba(16,185,129,0.15);color:#6EE7B7;border:1px solid rgba(16,185,129,0.25);}
+.badge-declined{background:rgba(239,68,68,0.15);color:#FCA5A5;border:1px solid rgba(239,68,68,0.25);}
+
+/* ── ACTION BUTTONS ── */
+.act-btn{padding:5px 11px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:4px;}
+.act-approve{background:rgba(16,185,129,0.15);color:#6EE7B7;border:1px solid rgba(16,185,129,0.25);}
+.act-approve:hover{background:rgba(16,185,129,0.3);}
+.act-decline{background:rgba(239,68,68,0.1);color:#FCA5A5;border:1px solid rgba(239,68,68,0.2);}
+.act-decline:hover{background:rgba(239,68,68,0.25);}
+.act-edit{background:var(--ink3);color:var(--text2);border:1px solid var(--border);}
+.act-edit:hover{border-color:var(--primary);color:var(--text);}
+
+/* ── MODAL ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.75);
+  backdrop-filter:blur(6px);z-index:500;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity 0.25s;
+}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{
+  background:var(--ink2);border:1px solid var(--border2);
+  border-radius:var(--radius-lg);padding:32px;width:520px;
+  transform:scale(0.95) translateY(12px);transition:all 0.25s var(--t);
+  position:relative;
+}
+.modal-overlay.open .modal{transform:scale(1) translateY(0);}
+.modal-title{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;margin-bottom:4px;}
+.modal-sub{font-size:12.5px;color:var(--text3);margin-bottom:24px;}
+.modal-close{position:absolute;top:20px;right:20px;background:var(--ink3);border:none;color:var(--text2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px;}
+.modal-close:hover{color:var(--text);}
+.perm-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;}
+.perm-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;background:var(--ink3);border-radius:10px;
+  border:1px solid var(--border);
+}
+.perm-label{font-size:12.5px;font-weight:500;}
+.toggle{position:relative;width:34px;height:18px;cursor:pointer;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{
+  position:absolute;inset:0;background:var(--ink4);border-radius:18px;
+  transition:all 0.2s;border:1px solid var(--border2);
+}
+.toggle-slider::before{
+  content:'';position:absolute;left:3px;top:50%;transform:translateY(-50%);
+  width:12px;height:12px;background:#94A3B8;border-radius:50%;
+  transition:all 0.2s;
+}
+.toggle input:checked + .toggle-slider{background:var(--primary);}
+.toggle input:checked + .toggle-slider::before{left:17px;background:white;}
+.role-select{
+  width:100%;padding:10px 14px;background:var(--ink3);border:1px solid var(--border);
+  border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13.5px;outline:none;
+  margin-bottom:16px;cursor:pointer;
+}
+.role-select:focus{border-color:var(--primary);}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;}
+.modal-btn{padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;}
+.modal-btn-cancel{background:var(--ink3);color:var(--text2);border:1px solid var(--border);}
+.modal-btn-cancel:hover{color:var(--text);}
+.modal-btn-save{background:var(--primary);color:white;box-shadow:0 4px 16px var(--primary-glow);}
+.modal-btn-save:hover{background:var(--primary-light);}
+.modal-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:6px;}
+
+/* ── EVENT REQUESTS ── */
+.req-card{
+  background:var(--ink2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px 22px;display:flex;gap:18px;align-items:flex-start;
+  margin-bottom:10px;transition:all 0.2s;
+}
+.req-card:hover{border-color:var(--border2);}
+.req-card.req-pending{border-left:3px solid var(--amber);}
+.req-card.req-approved{border-left:3px solid var(--green);opacity:0.7;}
+.req-card.req-declined{border-left:3px solid var(--red);opacity:0.6;}
+.req-event-date{
+  width:50px;height:52px;background:var(--ink3);border-radius:10px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.req-day{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;line-height:1;}
+.req-mon{font-size:9px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);}
+.req-body{flex:1;}
+.req-title{font-size:14px;font-weight:700;margin-bottom:3px;}
+.req-meta{font-size:11.5px;color:var(--text3);margin-bottom:8px;}
+.req-person{display:flex;align-items:center;gap:8px;font-size:12.5px;}
+.req-actions{display:flex;gap:6px;align-items:center;}
+
+/* ── REPORTING ── */
+.report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;}
+.report-card{background:var(--ink2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.report-num{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;margin-bottom:3px;}
+.report-lbl{font-size:11.5px;color:var(--text2);}
+.report-bar{margin-top:10px;height:4px;background:var(--ink3);border-radius:4px;overflow:hidden;}
+.report-fill{height:100%;border-radius:4px;transition:width 1s var(--t);}
+
+/* ── REGION MAP ── */
+.region-list{}
+.region-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.region-row:last-child{border:none;}
+.region-name{font-size:13px;flex:1;}
+.region-bar-wrap{width:140px;height:6px;background:var(--ink3);border-radius:4px;overflow:hidden;}
+.region-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--primary),var(--primary-light));}
+.region-count{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--text2);width:30px;text-align:right;}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:28px;right:28px;z-index:999;
+  background:var(--ink2);border:1px solid var(--border2);
+  border-radius:12px;padding:14px 20px;
+  display:flex;align-items:center;gap:12px;
+  font-size:13px;color:var(--text);box-shadow:0 12px 32px rgba(0,0,0,0.15);
+  transform:translateY(80px);opacity:0;
+  transition:all 0.3s var(--t);pointer-events:none;
+}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast-icon{font-size:18px;}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.fade-up{animation:fadeUp 0.5s var(--t) both;}
+.fade-up-1{animation-delay:0.05s;}
+.fade-up-2{animation-delay:0.1s;}
+.fade-up-3{animation-delay:0.15s;}
+.fade-up-4{animation-delay:0.2s;}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--ink4);border-radius:8px;}
+
+/* ── ACTIVITY FEED ── */
+.feed-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.feed-item:last-child{border:none;}
+.feed-dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;}
+.feed-text{font-size:12.5px;line-height:1.5;}
+.feed-time{font-size:10.5px;color:var(--text3);margin-top:2px;}
+
+/* ── TWO COL BOTTOM ── */
+.bottom-two{display:grid;grid-template-columns:1fr 340px;gap:16px;}
+
+/* ── PROGRESS RING ── */
+.ring-wrap{display:flex;align-items:center;justify-content:center;position:relative;width:100px;height:100px;}
+.ring-label{position:absolute;text-align:center;}
+.ring-pct{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;}
+.ring-sub{font-size:9px;color:var(--text3);}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1200px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+  .charts-row{grid-template-columns:1fr;}
+  .bottom-two{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ SIDEBAR ══════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="/static/logo.png" alt="Les Citoyens" class="logo-img">
+  </div>
+  <div class="admin-badge-bar">
+    <span class="admin-badge-label">🛡 Admin Console</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Principal</div>
+    <div class="nav-item active" onclick="showSection('overview',this)">
+      <span class="nav-icon">⬡</span> Vue d'ensemble
+    </div>
+    <div class="nav-item" onclick="showSection('users',this)">
+      <span class="nav-icon">👥</span> Utilisateurs
+      <span class="nav-badge">120</span>
+    </div>
+    <div class="nav-item" onclick="showSection('events',this)">
+      <span class="nav-icon">⚡</span> Demandes événements
+      <span class="nav-badge amber">7</span>
+    </div>
+    <div class="nav-section-label">Rapports</div>
+    <div class="nav-item" onclick="showSection('reporting',this)">
+      <span class="nav-icon">📊</span> Statistiques & Rapport
+    </div>
+    <div class="nav-item" onclick="showSection('regions',this)">
+      <span class="nav-icon">🗺</span> Carte régionale
+    </div>
+    <div class="nav-section-label">Système</div>
+    <div class="nav-item" onclick="showSection('activity',this)">
+      <span class="nav-icon">🕐</span> Journal d'activité
+      <span class="nav-badge green">3</span>
+    </div>
+    <div class="nav-item" style="color:var(--text3);">
+      <span class="nav-icon">⚙</span> Paramètres
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="admin-profile">
+      <div class="admin-av">SA</div>
+      <div>
+        <div class="admin-name">Super Admin</div>
+        <div class="admin-role"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="93f2f7fefafdd3f6ebf2fee3fff6bdf0fcfe">[email&#160;protected]</a></div>
+      </div>
+      <div class="logout-btn" onclick="window.location='/'">↩</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ══════════ MAIN ══════════ -->
+<main class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar" id="topbar">
+    <div>
+      <div class="page-title" id="pageTitle">Vue d'ensemble</div>
+      <div class="page-breadcrumb" id="pageBreadcrumb">Admin → Dashboard</div>
+    </div>
+    <div class="topbar-actions">
+      <button class="topbar-btn">⬇ Exporter CSV</button>
+      <button class="topbar-btn primary-btn" onclick="showSection('events',document.querySelector('.nav-item:nth-child(4)'))">+ Nouvelle action</button>
+      <div class="notif-bell">🔔<div class="notif-dot"></div></div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══════════════════════════════════════════
+         SECTION: OVERVIEW
+    ══════════════════════════════════════════ -->
+    <div class="section active" id="sec-overview">
+
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-glow-primary fade-up">
+          <div class="kpi-icon">👥</div>
+          <div class="kpi-val" style="color:#D4748E;">120</div>
+          <div class="kpi-lbl">Ambassadeurs actifs</div>
+          <div class="kpi-change up">↑ +8 ce mois • +7.1%</div>
+          <svg class="kpi-sparkline" viewBox="0 0 80 40"><polyline points="0,35 13,28 26,32 39,18 52,22 65,10 80,14" fill="none" stroke="#722d50" stroke-width="2"/></svg>
+        </div>
+        <div class="kpi-card kpi-glow-violet fade-up fade-up-1">
+          <div class="kpi-icon">⚡</div>
+          <div class="kpi-val" style="color:#A78BFA;">42</div>
+          <div class="kpi-lbl">Événements organisés</div>
+          <div class="kpi-change up">↑ +6 depuis jan • +16%</div>
+          <svg class="kpi-sparkline" viewBox="0 0 80 40"><polyline points="0,38 13,30 26,35 39,22 52,18 65,8 80,12" fill="none" stroke="#8B5CF6" stroke-width="2"/></svg>
+        </div>
+        <div class="kpi-card kpi-glow-cyan fade-up fade-up-2">
+          <div class="kpi-icon">🌍</div>
+          <div class="kpi-val" style="color:#67E8F9;">12</div>
+          <div class="kpi-lbl">Régions couvertes</div>
+          <div class="kpi-change" style="color:var(--text3);">Couverture nationale stable</div>
+          <svg class="kpi-sparkline" viewBox="0 0 80 40"><polyline points="0,32 13,32 26,28 39,28 52,28 65,24 80,24" fill="none" stroke="#06B6D4" stroke-width="2"/></svg>
+        </div>
+        <div class="kpi-card kpi-glow-amber fade-up fade-up-3">
+          <div class="kpi-icon">🔔</div>
+          <div class="kpi-val" style="color:#FCD34D;">7</div>
+          <div class="kpi-lbl">Demandes en attente</div>
+          <div class="kpi-change dn">↑ +3 nouvelles aujourd'hui</div>
+          <svg class="kpi-sparkline" viewBox="0 0 80 40"><polyline points="0,38 13,36 26,40 39,28 52,32 65,20 80,24" fill="none" stroke="#F59E0B" stroke-width="2"/></svg>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="charts-row fade-up fade-up-2">
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">📈 Croissance membres & événements</span>
+            <div style="display:flex;gap:6px;">
+              <span class="chart-pill active-pill">6 mois</span>
+              <span class="chart-pill">12 mois</span>
+            </div>
+          </div>
+          <div style="position:relative;height:200px;width:100%;"><canvas id="growthChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">🗂 Répartition des rôles</span>
+          </div>
+          <div style="position:relative;height:170px;width:100%;"><canvas id="rolesChart"></canvas></div>
+          <div style="margin-top:14px;display:flex;flex-direction:column;gap:6px;" id="rolesLegend"></div>
+        </div>
+      </div>
+
+      <!-- Bottom two col -->
+      <div class="bottom-two fade-up fade-up-3">
+        <!-- Recent activity -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">🕐 Activité récente</span>
+            <span class="chart-pill" style="cursor:default;">Aujourd'hui</span>
+          </div>
+          <div id="activityFeed"></div>
+        </div>
+
+        <!-- Quick stats sidebar -->
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div class="chart-card">
+            <div class="chart-header">
+              <span class="chart-title">📊 Taux d'engagement</span>
+            </div>
+            <div style="display:flex;justify-content:center;margin-bottom:12px;">
+              <div class="ring-wrap">
+                <svg width="100" height="100">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="#E2E8F0" stroke-width="8"/>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="#722d50" stroke-width="8"
+                    stroke-dasharray="213" stroke-dashoffset="53" stroke-linecap="round"
+                    transform="rotate(-90 50 50)"/>
+                </svg>
+                <div class="ring-label">
+                  <div class="ring-pct" style="color:#D4748E;">75%</div>
+                  <div class="ring-sub">actifs</div>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-around;text-align:center;">
+              <div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#6EE7B7;">90</div><div style="font-size:10.5px;color:var(--text3);">Actifs</div></div>
+              <div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#FCD34D;">20</div><div style="font-size:10.5px;color:var(--text3);">Inactifs</div></div>
+              <div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#A78BFA;">10</div><div style="font-size:10.5px;color:var(--text3);">Mentors</div></div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <span class="chart-title">⚡ Événements / mois</span>
+            </div>
+            <div style="position:relative;height:100px;width:100%;"><canvas id="miniBarChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SECTION: USERS
+    ══════════════════════════════════════════ -->
+    <div class="section" id="sec-users">
+      <div class="section-header">
+        <span class="section-title">Gestion des utilisateurs</span>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input class="search-bar" type="text" placeholder="🔍  Rechercher un membre…" oninput="filterUsers(this.value)">
+          <div class="filter-tabs">
+            <div class="ftab active-tab" onclick="filterRole('all',this)">Tous</div>
+            <div class="ftab" onclick="filterRole('admin',this)">Admin</div>
+            <div class="ftab" onclick="filterRole('mentor',this)">Mentors</div>
+            <div class="ftab" onclick="filterRole('ambassador',this)">Ambassadeurs</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Membre</th>
+              <th>Rôle</th>
+              <th>Région</th>
+              <th>Événements</th>
+              <th>Statut</th>
+              <th>Rejoint</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SECTION: EVENTS REQUESTS
+    ══════════════════════════════════════════ -->
+    <div class="section" id="sec-events">
+      <div class="section-header">
+        <span class="section-title">Demandes de participation aux événements</span>
+        <div class="filter-tabs">
+          <div class="ftab active-tab" onclick="filterReqs('all',this)">Toutes (12)</div>
+          <div class="ftab" onclick="filterReqs('pending',this)">En attente (7)</div>
+          <div class="ftab" onclick="filterReqs('approved',this)">Approuvées (3)</div>
+          <div class="ftab" onclick="filterReqs('declined',this)">Refusées (2)</div>
+        </div>
+      </div>
+      <div id="eventReqs"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SECTION: REPORTING
+    ══════════════════════════════════════════ -->
+    <div class="section" id="sec-reporting">
+      <div class="section-header">
+        <span class="section-title">Statistiques & Rapports</span>
+        <button class="topbar-btn primary-btn">⬇ Rapport PDF</button>
+      </div>
+
+      <div class="report-grid fade-up">
+        <div class="report-card">
+          <div class="report-num" style="color:#D4748E;">2,540</div>
+          <div class="report-lbl">Participants cumulés</div>
+          <div class="report-bar"><div class="report-fill" style="width:84%;background:linear-gradient(90deg,#722d50,#9B3D6A);"></div></div>
+        </div>
+        <div class="report-card">
+          <div class="report-num" style="color:#6EE7B7;">42</div>
+          <div class="report-lbl">Événements réalisés</div>
+          <div class="report-bar"><div class="report-fill" style="width:70%;background:linear-gradient(90deg,#10B981,#34D399);"></div></div>
+        </div>
+        <div class="report-card">
+          <div class="report-num" style="color:#A78BFA;">18</div>
+          <div class="report-lbl">Opportunités ouvertes</div>
+          <div class="report-bar"><div class="report-fill" style="width:60%;background:linear-gradient(90deg,#8B5CF6,#A78BFA);"></div></div>
+        </div>
+        <div class="report-card">
+          <div class="report-num" style="color:#FCD34D;">94%</div>
+          <div class="report-lbl">Taux de satisfaction</div>
+          <div class="report-bar"><div class="report-fill" style="width:94%;background:linear-gradient(90deg,#F59E0B,#FCD34D);"></div></div>
+        </div>
+        <div class="report-card">
+          <div class="report-num" style="color:#67E8F9;">12</div>
+          <div class="report-lbl">Régions actives</div>
+          <div class="report-bar"><div class="report-fill" style="width:100%;background:linear-gradient(90deg,#06B6D4,#67E8F9);"></div></div>
+        </div>
+        <div class="report-card">
+          <div class="report-num" style="color:#FCA5A5;">1,200h</div>
+          <div class="report-lbl">Heures de bénévolat</div>
+          <div class="report-bar"><div class="report-fill" style="width:78%;background:linear-gradient(90deg,#EF4444,#FCA5A5);"></div></div>
+        </div>
+      </div>
+
+      <div class="charts-row fade-up fade-up-2">
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">📅 Événements par catégorie & trimestre</span>
+          </div>
+          <div style="position:relative;height:200px;width:100%;"><canvas id="categoryChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">🌍 Top régions actives</span>
+          </div>
+          <div class="region-list" id="regionList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SECTION: REGIONS
+    ══════════════════════════════════════════ -->
+    <div class="section" id="sec-regions">
+      <div class="section-header">
+        <span class="section-title">Couverture régionale</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="chart-card">
+          <div class="chart-header"><span class="chart-title">📍 Membres par région</span></div>
+          <div style="position:relative;height:240px;width:100%;"><canvas id="regionChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><span class="chart-title">📊 Activité par région</span></div>
+          <div style="padding:4px 0;" id="regionActivity"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SECTION: ACTIVITY LOG
+    ══════════════════════════════════════════ -->
+    <div class="section" id="sec-activity">
+      <div class="section-header">
+        <span class="section-title">Journal d'activité système</span>
+        <span class="chart-pill">Temps réel</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>Utilisateur</th>
+              <th>Cible</th>
+              <th>IP</th>
+              <th>Date/Heure</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody id="activityLog"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<!-- ══════════════════════════════════════════
+     MODAL: USER PERMISSIONS
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="permModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+      <div class="av av-lg" id="modalAv" style="background:#722d50;">AB</div>
+      <div>
+        <div class="modal-title" id="modalName">Nom du membre</div>
+        <div class="modal-sub" id="modalEmail"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="badfd7dbd3d6fad6dfc9d9d3ced5c3dfd4c994d5c8dd">[email&#160;protected]</a></div>
+      </div>
+    </div>
+
+    <div class="modal-label">Rôle</div>
+    <select class="role-select" id="roleSelect">
+      <option value="admin">🛡 Admin</option>
+      <option value="mentor">⭐ Mentor Ambassador</option>
+      <option value="it">💻 IT Ambassador</option>
+      <option value="ambassador" selected>🤝 Ambassador</option>
+      <option value="inactive">⏸ Inactif</option>
+    </select>
+
+    <div class="modal-label">Permissions</div>
+    <div class="perm-grid" id="permGrid"></div>
+
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="modal-btn modal-btn-save" onclick="savePermissions()">💾 Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toastIcon">✅</span>
+  <span id="toastMsg">Action effectuée</span>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ══════════ DATA ══════════
+const USERS = [
+  {id:1,name:"Salih El Mehdi",avatar:"SM",email:"mehdi.salih@lescitoyens.org",role:"ambassador",region:"Rabat-Salé-Kénitra",events:12,joined:"2025-03",status:"active",color:"#8B5CF6"},
+  {id:2,name:"Mohamed EL AMRANI",avatar:"MA",email:"m.elamrani@lescitoyens.org",role:"ambassador",region:"Béni Mellal-Khénifra",events:8,joined:"2025-01",status:"active",color:"#06B6D4"},
+  {id:3,name:"BOUCHAMAR Meryam",avatar:"BM",email:"m.bouchamar@lescitoyens.org",role:"ambassador",region:"Casablanca-Settat",events:6,joined:"2025-01",status:"active",color:"#F59E0B"},
+  {id:4,name:"Hamza Bouksim",avatar:"HB",email:"hamzabouksim1@gmail.com",role:"mentor",region:"Souss-Massa",events:25,joined:"2021-06",status:"active",color:"#10B981"},
+  {id:5,name:"Chaimae CHAATET",avatar:"CC",email:"c.chaatet@lescitoyens.org",role:"ambassador",region:"Tanger-Tétouan-Al Hoceïma",events:20,joined:"2020-03",status:"active",color:"#EF4444"},
+  {id:6,name:"Ait El Mouden Khaoula",avatar:"AK",email:"khaoula.mouden@lescitoyens.org",role:"it",region:"Drâa-Tafilalet",events:12,joined:"2025-03",status:"active",color:"#8B5CF6"},
+  {id:7,name:"Bachir Abou Yassine",avatar:"BY",email:"bachirabouyassine@lescitoyens.org",role:"ambassador",region:"Rabat-Salé-Kénitra",events:5,joined:"2022-07",status:"active",color:"#F59E0B"},
+  {id:8,name:"Nour El Houda Elfadl",avatar:"NE",email:"nourelhouda.elfadl@lescitoyens.org",role:"ambassador",region:"Rabat-Salé-Kénitra",events:7,joined:"2024-11",status:"active",color:"#06B6D4"},
+  {id:9,name:"Salma Tazi",avatar:"ST",email:"salma.tazi@lescitoyens.org",role:"mentor",region:"Fès-Meknès",events:31,joined:"2020-09",status:"active",color:"#722d50"},
+  {id:10,name:"Omar Idrissi",avatar:"OI",email:"omar.idrissi@lescitoyens.org",role:"ambassador",region:"Fès-Meknès",events:9,joined:"2023-05",status:"active",color:"#10B981"},
+  {id:11,name:"Zineb Mansouri",avatar:"ZM",email:"z.mansouri@lescitoyens.org",role:"ambassador",region:"Marrakech-Safi",events:4,joined:"2024-02",status:"inactive",color:"#94A3B8"},
+  {id:12,name:"Youssef Belkadi",avatar:"YB",email:"y.belkadi@lescitoyens.org",role:"admin",region:"Casablanca-Settat",events:0,joined:"2019-01",status:"active",color:"#722d50"},
+];
+
+const EVENT_REQUESTS = [
+  {id:1,event:"Forum Citoyen — Agadir",date:"2026-04-15",location:"Agadir, Souss-Massa",person:"Hamza Bouksim",personAv:"HB",personColor:"#10B981",role:"Mentor Ambassador",message:"Je souhaite organiser un café-citoyen sur la thématique de l'eau dans notre région. J'ai déjà un partenaire local confirmé.",status:"pending",tags:["Forum","Environment"]},
+  {id:2,event:"Atelier Leadership Jeunes",date:"2026-04-22",location:"Casablanca",person:"BOUCHAMAR Meryam",personAv:"BM",personColor:"#F59E0B",role:"Ambassador",message:"Formation d'une journée sur le leadership pour 30 jeunes de mon quartier. Budget estimé: 2000 MAD.",status:"pending",tags:["Training","Youth"]},
+  {id:3,event:"Marathon Citoyen",date:"2026-05-01",location:"Fès",person:"Omar Idrissi",personAv:"OI",personColor:"#10B981",role:"Ambassador",message:"Coordination avec la mairie de Fès pour un marathon solidaire combinant sport et sensibilisation environnementale.",status:"pending",tags:["Sports","Environment"]},
+  {id:4,event:"Hackathon Civic Tech",date:"2026-05-10",location:"Rabat",person:"Salih El Mehdi",personAv:"SM",personColor:"#8B5CF6",role:"IT Ambassador",message:"Hackathon de 48h sur les solutions numériques pour la participation citoyenne. 5 équipes de développeurs déjà inscrites.",status:"pending",tags:["Tech","Innovation"]},
+  {id:5,event:"Conférence Plaidoyer",date:"2026-05-18",location:"Tanger",person:"Chaimae CHAATET",personAv:"CC",personColor:"#EF4444",role:"Ambassador",message:"Conférence internationale sur les techniques de plaidoyer avec des intervenants d'Espagne et de France.",status:"pending",tags:["Advocacy","International"]},
+  {id:6,event:"Café Citoyen Ouarzazate",date:"2026-03-28",location:"Ouarzazate",person:"Ait El Mouden Khaoula",personAv:"AK",personColor:"#8B5CF6",role:"IT Ambassador",message:"Discussion ouverte sur l'impact du numérique dans les zones rurales. Partenariat avec l'école locale.",status:"approved",tags:["Digital","Rural"]},
+  {id:7,event:"Forum Jeunesse & Emploi",date:"2026-03-20",location:"Béni Mellal",person:"Mohamed EL AMRANI",personAv:"MA",personColor:"#06B6D4",role:"Ambassador",message:"Rencontre entre jeunes ambassadeurs et acteurs locaux de l'emploi.",status:"approved",tags:["Employment","Youth"]},
+  {id:8,event:"Atelier Médias Sociaux",date:"2026-03-12",location:"Sale",person:"Bachir Abou Yassine",personAv:"BY",personColor:"#F59E0B",role:"Ambassador",message:"Formation sur l'utilisation responsable des réseaux sociaux pour la communication citoyenne.",status:"approved",tags:["Media","Training"]},
+  {id:9,event:"Conférence Politique Étrangère",date:"2026-04-30",location:"Casablanca",person:"Zineb Mansouri",personAv:"ZM",personColor:"#94A3B8",role:"Ambassador",message:"Organisation d'une conférence sur la politique étrangère marocaine.",status:"declined",tags:["Politics"]},
+  {id:10,event:"Festival Culturel",date:"2026-05-25",location:"Marrakech",person:"Nour El Houda Elfadl",personAv:"NE",personColor:"#06B6D4",role:"Ambassador",message:"Festival de 3 jours mélangeant culture et citoyenneté.",status:"declined",tags:["Culture"]},
+];
+
+const ACTIVITY_LOG = [
+  {action:"Connexion admin",user:"admin@example.com",target:"Système",ip:"196.23.14.2",time:"Aujourd'hui 09:42",status:"success"},
+  {action:"Rôle modifié",user:"Youssef Belkadi",target:"Salih El Mehdi → IT Ambassador",ip:"196.23.14.2",time:"Aujourd'hui 09:38",status:"success"},
+  {action:"Demande approuvée",user:"admin@example.com",target:"Forum Jeunesse & Emploi",ip:"196.23.14.2",time:"Aujourd'hui 09:30",status:"success"},
+  {action:"Demande refusée",user:"admin@example.com",target:"Festival Culturel",ip:"196.23.14.2",time:"Hier 18:21",status:"warning"},
+  {action:"Nouveau membre",user:"Système",target:"Bachir Abou Yassine inscrit",ip:"41.248.90.3",time:"Hier 16:05",status:"success"},
+  {action:"Export CSV",user:"admin@example.com",target:"Liste ambassadeurs (120)",ip:"196.23.14.2",time:"Hier 14:50",status:"success"},
+  {action:"Tentative connexion",user:"unknown@test.com",target:"Panneau admin",ip:"77.34.102.5",time:"Hier 12:14",status:"error"},
+  {action:"Permission modifiée",user:"Youssef Belkadi",target:"Zineb Mansouri → Inactif",ip:"196.23.14.2",time:"2 mars 2026, 11:00",status:"warning"},
+];
+
+const REGIONS = [
+  {name:"Rabat-Salé-Kénitra",count:28,events:12},
+  {name:"Casablanca-Settat",count:22,events:9},
+  {name:"Fès-Meknès",count:18,events:8},
+  {name:"Tanger-Tétouan-Al Hoceïma",count:14,events:6},
+  {name:"Souss-Massa",count:12,events:5},
+  {name:"Marrakech-Safi",count:10,events:4},
+  {name:"Béni Mellal-Khénifra",count:6,events:3},
+  {name:"Oriental",count:4,events:2},
+  {name:"Drâa-Tafilalet",count:3,events:1},
+  {name:"Laâyoune-Sakia El Hamra",count:2,events:1},
+  {name:"Guelmim-Oued Noun",count:1,events:0},
+];
+
+const PERMISSIONS = [
+  "Gérer les membres","Créer des événements","Approuver des demandes",
+  "Exporter des données","Accès médiathèque","Messagerie interne",
+  "Voir les rapports","Envoyer des notifications"
+];
+
+// ══════════ NAVIGATION ══════════
+const pageMeta = {
+  overview:{title:"Vue d'ensemble",crumb:"Admin → Dashboard"},
+  users:{title:"Utilisateurs",crumb:"Admin → Gestion membres"},
+  events:{title:"Demandes événements",crumb:"Admin → Événements"},
+  reporting:{title:"Statistiques & Rapports",crumb:"Admin → Rapports"},
+  regions:{title:"Carte régionale",crumb:"Admin → Régions"},
+  activity:{title:"Journal d'activité",crumb:"Admin → Activité"},
+};
+
+function showSection(name, el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  if(el) el.classList.add('active');
+  const m = pageMeta[name]||{title:name,crumb:'Admin'};
+  document.getElementById('pageTitle').textContent = m.title;
+  document.getElementById('pageBreadcrumb').textContent = m.crumb;
+}
+
+// ══════════ CHARTS ══════════
+function hexToRgb(hex){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+Chart.defaults.color='#475569';
+Chart.defaults.borderColor='rgba(0,0,0,0.06)';
+Chart.defaults.font.family="'DM Sans',sans-serif";
+
+// Growth Chart
+const growthCtx = document.getElementById('growthChart').getContext('2d');
+const growthGrad = growthCtx.createLinearGradient(0,0,0,200);
+growthGrad.addColorStop(0,'rgba(114,45,80,0.4)');growthGrad.addColorStop(1,'rgba(114,45,80,0)');
+new Chart(growthCtx,{
+  type:'line',
+  data:{
+    labels:['Oct','Nov','Déc','Jan','Fév','Mar'],
+    datasets:[
+      {label:'Membres',data:[95,100,105,108,113,120],borderColor:'#9B3D6A',backgroundColor:growthGrad,tension:0.4,fill:true,borderWidth:2.5,pointBackgroundColor:'#9B3D6A',pointRadius:4,pointHoverRadius:6},
+      {label:'Événements',data:[5,8,6,10,12,7],borderColor:'#8B5CF6',backgroundColor:'transparent',tension:0.4,fill:false,borderWidth:2,borderDash:[],pointBackgroundColor:'#8B5CF6',pointRadius:4,pointHoverRadius:6},
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},plugins:{legend:{position:'top',labels:{boxWidth:10,padding:12,usePointStyle:true,font:{size:11}}}},scales:{y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{padding:6,font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}
+});
+
+// Roles Donut
+const rolesCtx = document.getElementById('rolesChart').getContext('2d');
+const roleData = {labels:['Ambassador','Mentor','IT Amb.','Admin','Inactif'],data:[88,10,12,5,5],colors:['#722d50','#8B5CF6','#06B6D4','#F59E0B','#505A6E']};
+new Chart(rolesCtx,{
+  type:'doughnut',
+  data:{labels:roleData.labels,datasets:[{data:roleData.data,backgroundColor:roleData.colors,borderColor:'#F8F9FA',borderWidth:3,hoverOffset:6}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false}}}
+});
+document.getElementById('rolesLegend').innerHTML = roleData.labels.map((l,i)=>`
+  <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;">
+    <div style="display:flex;align-items:center;gap:7px;">
+      <div style="width:8px;height:8px;border-radius:2px;background:${roleData.colors[i]};"></div>
+      <span style="color:var(--text2);">${l}</span>
+    </div>
+    <span style="font-family:'Syne',sans-serif;font-weight:700;">${roleData.data[i]}</span>
+  </div>`).join('');
+
+// Mini Bar
+const miniBarCtx = document.getElementById('miniBarChart').getContext('2d');
+new Chart(miniBarCtx,{
+  type:'bar',
+  data:{
+    labels:['Oct','Nov','Déc','Jan','Fév','Mar'],
+    datasets:[{data:[4,7,5,9,8,5],backgroundColor:['rgba(114,45,80,0.6)','rgba(114,45,80,0.6)','rgba(114,45,80,0.6)','rgba(114,45,80,0.6)','rgba(114,45,80,0.6)','#9B3D6A'],borderRadius:6,borderSkipped:false}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{display:false},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+});
+
+// Category Chart
+setTimeout(()=>{
+  const catCtx = document.getElementById('categoryChart')?.getContext('2d');
+  if(catCtx) new Chart(catCtx,{
+    type:'bar',
+    data:{
+      labels:['Q1 2025','Q2 2025','Q3 2025','Q4 2025','Q1 2026'],
+      datasets:[
+        {label:'Forum',data:[3,4,5,4,4],backgroundColor:'rgba(114,45,80,0.7)',borderRadius:4,borderSkipped:false},
+        {label:'Atelier',data:[2,3,2,3,3],backgroundColor:'rgba(139,92,246,0.7)',borderRadius:4,borderSkipped:false},
+        {label:'Formation',data:[1,2,3,4,2],backgroundColor:'rgba(6,182,212,0.7)',borderRadius:4,borderSkipped:false},
+        {label:'Autre',data:[1,1,2,1,2],backgroundColor:'rgba(245,158,11,0.7)',borderRadius:4,borderSkipped:false},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},plugins:{legend:{position:'top',labels:{boxWidth:10,padding:14,usePointStyle:true}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,grid:{color:'rgba(0,0,0,0.05)'}}}}
+  });
+  const regionCtx = document.getElementById('regionChart')?.getContext('2d');
+  if(regionCtx){
+    const top7 = REGIONS.slice(0,7);
+    new Chart(regionCtx,{
+      type:'bar',
+      data:{
+        labels:top7.map(r=>r.name.split('-')[0]),
+        datasets:[{
+          label:'Membres',data:top7.map(r=>r.count),
+          backgroundColor:['#722d50','#8B5CF6','#06B6D4','#F59E0B','#10B981','#EF4444','#8B5CF6'],
+          borderRadius:6,borderSkipped:false
+        }]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,0.05)'}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+    });
+  }
+},100);
+
+// ══════════ ACTIVITY FEED ══════════
+const feedItems = [
+  {icon:"🔔",text:"<strong>Hamza Bouksim</strong> a soumis une demande pour <em>Forum Citoyen — Agadir</em>",time:"Il y a 12 min",color:"#F59E0B"},
+  {icon:"✅",text:"<strong>Café Citoyen Ouarzazate</strong> approuvé par admin",time:"Il y a 28 min",color:"#10B981"},
+  {icon:"👤",text:"<strong>Nour El Houda Elfadl</strong> a rejoint l'espace ambassadeur",time:"Il y a 1h",color:"#06B6D4"},
+  {icon:"📋",text:"<strong>Mohamed EL AMRANI</strong> a soumis un rapport d'activité",time:"Il y a 2h",color:"#722d50"},
+  {icon:"⭐",text:"<strong>Salma Tazi</strong> a été promue <em>Mentor Ambassador</em>",time:"Il y a 3h",color:"#8B5CF6"},
+  {icon:"📅",text:"<strong>6 nouveaux événements</strong> planifiés pour avril 2026",time:"Hier 18:00",color:"#F59E0B"},
+];
+document.getElementById('activityFeed').innerHTML = feedItems.map(f=>`
+  <div class="feed-item">
+    <div class="feed-dot" style="background:${f.color};"></div>
+    <div>
+      <div class="feed-text">${f.text}</div>
+      <div class="feed-time">${f.time}</div>
+    </div>
+  </div>`).join('');
+
+// ══════════ USERS TABLE ══════════
+const roleLabels = {admin:'admin',mentor:'mentor',it:'ambassador',ambassador:'ambassador',inactive:'inactive'};
+const roleBadge = {
+  admin:'<span class="badge badge-admin">🛡 Admin</span>',
+  mentor:'<span class="badge badge-mentor">⭐ Mentor</span>',
+  it:'<span class="badge badge-ambassador" style="background:rgba(6,182,212,0.15);color:#67E8F9;border-color:rgba(6,182,212,0.2);">💻 IT Amb.</span>',
+  ambassador:'<span class="badge badge-ambassador">🤝 Ambassador</span>',
+  inactive:'<span class="badge badge-inactive">⏸ Inactif</span>',
+};
+const statusBadge = {
+  active:'<span class="badge badge-approved">● Actif</span>',
+  inactive:'<span class="badge badge-inactive">● Inactif</span>',
+};
+function renderUsers(list){
+  document.getElementById('usersTable').innerHTML = list.map(u=>`
+    <tr>
+      <td><div class="av-info">
+        <div class="av" style="background:${u.color};">${u.avatar}</div>
+        <div><div class="av-name">${u.name}</div><div class="av-email">${u.email}</div></div>
+      </div></td>
+      <td>${roleBadge[u.role]||roleBadge.ambassador}</td>
+      <td style="font-size:12.5px;color:var(--text2);">${u.region}</td>
+      <td><span style="font-family:'Syne',sans-serif;font-weight:700;">${u.events}</span></td>
+      <td>${statusBadge[u.status]}</td>
+      <td style="color:var(--text3);font-size:12px;">${u.joined}</td>
+      <td><div style="display:flex;gap:6px;">
+        <button class="act-btn act-edit" onclick="openModal(${u.id})">✏ Rôle</button>
+        <button class="act-btn act-decline" onclick="showToast('Membre suspendu temporairement','⚠️')">⏸</button>
+      </div></td>
+    </tr>`).join('');
+}
+renderUsers(USERS);
+function filterUsers(q){
+  const f=q.toLowerCase();
+  renderUsers(USERS.filter(u=>u.name.toLowerCase().includes(f)||u.email.toLowerCase().includes(f)));
+}
+let activeRole='all';
+function filterRole(role,el){
+  activeRole=role;
+  document.querySelectorAll('#sec-users .ftab').forEach(t=>t.classList.remove('active-tab'));
+  el.classList.add('active-tab');
+  const f=role==='all'?USERS:USERS.filter(u=>u.role===role||(role==='mentor'&&u.role==='mentor')||(role==='ambassador'&&(u.role==='ambassador'||u.role==='it')));
+  renderUsers(f);
+}
+
+// ══════════ EVENT REQUESTS ══════════
+const months=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+function renderReqs(list){
+  document.getElementById('eventReqs').innerHTML = list.map(r=>{
+    const d=new Date(r.date);
+    const isValid=!isNaN(d);
+    return `
+    <div class="req-card req-${r.status}" id="req-${r.id}">
+      <div class="req-event-date">
+        <div class="req-day">${isValid?d.getDate():'?'}</div>
+        <div class="req-mon">${isValid?months[d.getMonth()]:'—'}</div>
+      </div>
+      <div class="req-body">
+        <div class="req-title">${r.event}</div>
+        <div class="req-meta">📍 ${r.location} &nbsp;·&nbsp; ${r.tags.map(t=>`<span class="badge badge-ambassador" style="font-size:9.5px;padding:1px 7px;">${t}</span>`).join(' ')}</div>
+        <div class="req-person">
+          <div class="av" style="background:${r.personColor};width:24px;height:24px;font-size:9px;">${r.personAv}</div>
+          <strong>${r.person}</strong> <span style="color:var(--text3);">— ${r.role}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin-top:6px;font-style:italic;">"${r.message}"</div>
+      </div>
+      <div class="req-actions" style="flex-direction:column;min-width:110px;">
+        ${r.status==='pending'?`
+          <button class="act-btn act-approve" onclick="handleReq(${r.id},'approved')">✓ Approuver</button>
+          <button class="act-btn act-decline" onclick="handleReq(${r.id},'declined')">✗ Refuser</button>
+        `:`<span class="badge ${r.status==='approved'?'badge-approved':'badge-declined'}">${r.status==='approved'?'✓ Approuvé':'✗ Refusé'}</span>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+renderReqs(EVENT_REQUESTS);
+let currentFilter='all';
+function filterReqs(f,el){
+  currentFilter=f;
+  document.querySelectorAll('#sec-events .ftab').forEach(t=>t.classList.remove('active-tab'));
+  el.classList.add('active-tab');
+  const list=f==='all'?EVENT_REQUESTS:EVENT_REQUESTS.filter(r=>r.status===f);
+  renderReqs(list);
+}
+function handleReq(id,action){
+  const req=EVENT_REQUESTS.find(r=>r.id===id);
+  if(req){req.status=action;}
+  const list=currentFilter==='all'?EVENT_REQUESTS:EVENT_REQUESTS.filter(r=>r.status===currentFilter);
+  renderReqs(list);
+  showToast(action==='approved'?'Demande approuvée avec succès ✅':'Demande refusée','✅');
+  // Update badge count
+  const pending=EVENT_REQUESTS.filter(r=>r.status==='pending').length;
+  document.querySelectorAll('.nav-badge.amber').forEach(b=>b.textContent=pending);
+}
+
+// ══════════ REGIONS ══════════
+document.getElementById('regionList').innerHTML = REGIONS.slice(0,8).map(r=>`
+  <div class="region-row">
+    <span class="region-name">${r.name}</span>
+    <div class="region-bar-wrap"><div class="region-bar" style="width:${Math.round(r.count/28*100)}%;"></div></div>
+    <span class="region-count">${r.count}</span>
+  </div>`).join('');
+document.getElementById('regionActivity').innerHTML = REGIONS.slice(0,10).map(r=>`
+  <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
+    <div style="width:6px;height:6px;border-radius:50%;background:${r.events>6?'#10B981':r.events>3?'#F59E0B':'#505A6E'};"></div>
+    <span style="font-size:12.5px;flex:1;">${r.name}</span>
+    <span style="font-size:11px;color:var(--text3);">${r.events} événements</span>
+    <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;">${r.count} mbr</span>
+  </div>`).join('');
+
+// ══════════ ACTIVITY LOG ══════════
+const statusLog={success:'<span class="badge badge-approved">✓ Succès</span>',warning:'<span class="badge badge-pending">⚠ Alerte</span>',error:'<span class="badge badge-declined">✗ Erreur</span>'};
+document.getElementById('activityLog').innerHTML = ACTIVITY_LOG.map(a=>`
+  <tr>
+    <td style="font-weight:600;font-size:12.5px;">${a.action}</td>
+    <td style="font-size:12px;color:var(--text2);">${a.user}</td>
+    <td style="font-size:12px;color:var(--text3);">${a.target}</td>
+    <td style="font-size:11px;color:var(--text3);font-family:monospace;">${a.ip}</td>
+    <td style="font-size:12px;color:var(--text3);">${a.time}</td>
+    <td>${statusLog[a.status]}</td>
+  </tr>`).join('');
+
+// ══════════ MODAL ══════════
+let currentUser=null;
+function openModal(id){
+  currentUser=USERS.find(u=>u.id===id);
+  if(!currentUser)return;
+  document.getElementById('modalAv').textContent=currentUser.avatar;
+  document.getElementById('modalAv').style.background=currentUser.color;
+  document.getElementById('modalName').textContent=currentUser.name;
+  document.getElementById('modalEmail').textContent=currentUser.email;
+  document.getElementById('roleSelect').value=currentUser.role;
+  const defaults={admin:[1,1,1,1,1,1,1,1],mentor:[0,1,1,0,1,1,1,0],it:[1,1,0,0,1,1,0,0],ambassador:[0,1,0,0,1,1,0,0],inactive:[0,0,0,0,0,0,0,0]};
+  const perms=defaults[currentUser.role]||defaults.ambassador;
+  document.getElementById('permGrid').innerHTML=PERMISSIONS.map((p,i)=>`
+    <div class="perm-item">
+      <span class="perm-label">${p}</span>
+      <label class="toggle">
+        <input type="checkbox" ${perms[i]?'checked':''}>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>`).join('');
+  document.getElementById('permModal').classList.add('open');
+}
+function closeModal(){document.getElementById('permModal').classList.remove('open');}
+function savePermissions(){
+  if(currentUser){
+    const newRole=document.getElementById('roleSelect').value;
+    currentUser.role=newRole;
+    renderUsers(USERS);
+  }
+  closeModal();
+  showToast('Permissions mises à jour avec succès');
+}
+document.getElementById('permModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+// ══════════ TOAST ══════════
+function showToast(msg,icon='✅'){
+  const t=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent=msg;
+  document.getElementById('toastIcon').textContent=icon;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+</script>
+</body>
+</html>

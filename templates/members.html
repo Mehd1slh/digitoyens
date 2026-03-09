@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block page_title %}Espace Membres{% endblock %}
+{% block page_sub %}— 120 ambassadeurs actifs{% endblock %}
+
+{% block content %}
+<style>
+.filter-bar { display:flex; gap:10px; margin-bottom:22px; flex-wrap:wrap; align-items:center; }
+.filter-select {
+  padding:8px 14px; background:var(--ink2); border:1px solid var(--border);
+  border-radius:10px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:13px;
+  outline:none; cursor:pointer; transition:all 0.2s; min-width:150px;
+}
+.filter-select:focus { border-color:var(--primary); }
+.search-box {
+  display:flex; align-items:center; gap:8px;
+  background:var(--ink2); border:1px solid var(--border);
+  border-radius:10px; padding:8px 14px; flex:1; min-width:200px;
+}
+.search-box:focus-within { border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-glow); }
+.search-box input { background:none; border:none; outline:none; color:var(--text); font-family:'DM Sans',sans-serif; font-size:13.5px; width:100%; }
+
+.members-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:14px; }
+
+.member-card {
+  background:var(--ink2); border:1px solid var(--border); border-radius:var(--radius);
+  padding:20px; cursor:pointer; transition:all 0.2s;
+  position:relative; overflow:hidden;
+}
+.member-card::before {
+  content:''; position:absolute; top:-40px; right:-40px;
+  width:120px; height:120px; border-radius:50%;
+  opacity:0.06; transition:opacity 0.2s;
+}
+.member-card:hover { border-color:var(--border2); transform:translateY(-3px); box-shadow:0 12px 30px rgba(0,0,0,0.35); }
+.member-card:hover::before { opacity:0.12; }
+
+.mc-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
+.mc-name { font-family:'Syne',sans-serif; font-weight:700; font-size:15px; margin-bottom:3px; }
+.mc-role { font-size:11.5px; color:var(--text3); }
+.mc-location { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--text2); margin-bottom:12px; }
+.mc-skills { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:14px; }
+.mc-skill { padding:3px 9px; border-radius:20px; font-size:10.5px; font-weight:600; border:1px solid; }
+.mc-footer { display:flex; align-items:center; justify-content:space-between; padding-top:12px; border-top:1px solid var(--border); }
+.mc-events { font-size:11.5px; color:var(--text3); }
+.mc-msg-btn {
+  width:30px; height:30px; background:var(--ink3); border:1px solid var(--border);
+  border-radius:8px; display:flex; align-items:center; justify-content:center;
+  font-size:14px; transition:all 0.2s;
+}
+.mc-msg-btn:hover { background:rgba(124,58,237,0.2); border-color:var(--primary); }
+
+/* Profile modal */
+.profile-modal { padding:0; max-width:600px; overflow:hidden; }
+.pm-header { padding:28px; border-bottom:1px solid var(--border); display:flex; gap:18px; align-items:center; position:relative; }
+.pm-header::before { content:''; position:absolute; inset:0; opacity:0.05; }
+.pm-name { font-family:'Syne',sans-serif; font-weight:800; font-size:22px; margin-bottom:4px; }
+.pm-role { font-size:13px; color:var(--text2); margin-bottom:6px; }
+.pm-joined { font-size:11.5px; color:var(--text3); }
+.pm-body { padding:24px; }
+.pm-section { margin-bottom:20px; }
+.pm-section-title { font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text3); font-weight:600; margin-bottom:10px; }
+.pm-bio { font-size:13.5px; color:var(--text2); line-height:1.6; }
+.pm-info-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.pm-info-icon { width:28px; height:28px; background:var(--ink3); border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+.pm-info-text { font-size:13px; }
+.pm-actions { display:flex; gap:10px; padding:20px 24px; border-top:1px solid var(--border); }
+</style>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+  <div class="search-box">
+    <span>🔍</span>
+    <input type="text" placeholder="Rechercher par nom…" id="searchInput" oninput="filterMembers()">
+  </div>
+  <select class="filter-select" id="filterRegion" onchange="filterMembers()">
+    <option value="">Toutes les régions</option>
+    <option>Marrakech-Safi</option>
+    <option>Casablanca-Settat</option>
+    <option>Rabat-Salé-Kénitra</option>
+    <option>Fès-Meknès</option>
+    <option>Souss-Massa</option>
+    <option>Tanger-Tétouan-Al Hoceïma</option>
+    <option>Oriental</option>
+  </select>
+  <select class="filter-select" id="filterSkill" onchange="filterMembers()">
+    <option value="">Toutes les compétences</option>
+    <option>Community Building</option>
+    <option>Events</option>
+    <option>Tech</option>
+    <option>Legal</option>
+    <option>Media</option>
+    <option>Youth Work</option>
+    <option>Training</option>
+  </select>
+  <div id="resultCount" style="font-size:12.5px;color:var(--text3);margin-left:auto;"></div>
+</div>
+
+<!-- Members Grid -->
+<div class="members-grid" id="membersGrid">
+  <div style="grid-column:1/-1;text-align:center;color:var(--text3);padding:40px;">Chargement…</div>
+</div>
+
+<!-- Profile Modal -->
+<div class="modal-overlay" id="profileModal" onclick="closeProfile()">
+  <div class="modal profile-modal" onclick="event.stopPropagation()" id="profileContent"></div>
+</div>
+
+<script>
+let allMembers = [];
+
+const SKILL_COLORS = {
+  'Community Building': ['rgba(124,58,237,0.15)','#A78BFA','rgba(124,58,237,0.5)'],
+  'Events': ['rgba(239,68,68,0.12)','#FCA5A5','rgba(239,68,68,0.4)'],
+  'Social Media': ['rgba(249,115,22,0.12)','#FED7AA','rgba(249,115,22,0.4)'],
+  'Tech': ['rgba(6,182,212,0.12)','#67E8F9','rgba(6,182,212,0.4)'],
+  'Facilitation': ['rgba(16,185,129,0.12)','#6EE7B7','rgba(16,185,129,0.4)'],
+  'Training': ['rgba(16,185,129,0.12)','#6EE7B7','rgba(16,185,129,0.4)'],
+  'Legal': ['rgba(245,158,11,0.15)','#FCD34D','rgba(245,158,11,0.4)'],
+  'Advocacy': ['rgba(245,158,11,0.15)','#FCD34D','rgba(245,158,11,0.4)'],
+  'Writing': ['rgba(245,158,11,0.15)','#FCD34D','rgba(245,158,11,0.4)'],
+  'Youth Work': ['rgba(249,115,22,0.12)','#FED7AA','rgba(249,115,22,0.4)'],
+  'Sports': ['rgba(16,185,129,0.12)','#6EE7B7','rgba(16,185,129,0.4)'],
+  'Environment': ['rgba(16,185,129,0.12)','#6EE7B7','rgba(16,185,129,0.4)'],
+  'Education': ['rgba(6,182,212,0.12)','#67E8F9','rgba(6,182,212,0.4)'],
+  'Media': ['rgba(6,182,212,0.12)','#67E8F9','rgba(6,182,212,0.4)'],
+  'Photography': ['rgba(124,58,237,0.15)','#A78BFA','rgba(124,58,237,0.5)'],
+  'Art': ['rgba(249,115,22,0.12)','#FED7AA','rgba(249,115,22,0.4)'],
+  'Culture': ['rgba(249,115,22,0.12)','#FED7AA','rgba(249,115,22,0.4)'],
+};
+
+function skillStyle(s) {
+  const c = SKILL_COLORS[s] || ['rgba(255,255,255,0.06)','#9090A8','rgba(255,255,255,0.2)'];
+  return `background:${c[0]};color:${c[1]};border-color:${c[2]};`;
+}
+
+function renderMember(m) {
+  return `<div class="member-card" onclick="openProfile(${m.id})" style="position:relative;">
+    <div style="position:absolute;top:-40px;right:-40px;width:120px;height:120px;border-radius:50%;background:${m.color};opacity:0.07;"></div>
+    <div class="mc-top">
+      <div>
+        <div class="mc-name">${m.name}</div>
+        <div class="mc-role">${m.role}</div>
+      </div>
+      ${avatarHTML(m.photo_url, m.avatar, m.color, 'av-md')}
+    </div>
+    <div class="mc-location">📍 ${m.city} <span style="color:var(--text3);">·</span> <span style="font-size:11px;color:var(--text3);">${m.region}</span></div>
+    <div class="mc-skills">${m.skills.slice(0,3).map(s=>`<span class="mc-skill" style="${skillStyle(s)}">${s}</span>`).join('')}</div>
+    <div class="mc-footer">
+      <span class="mc-events">⚡ ${m.events} événements</span>
+      <div class="mc-msg-btn" onclick="event.stopPropagation();window.location='/messages'">💬</div>
+    </div>
+  </div>`;
+}
+
+function filterMembers() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const region = document.getElementById('filterRegion').value;
+  const skill = document.getElementById('filterSkill').value;
+  let filtered = allMembers.filter(m => {
+    return (!q || m.name.toLowerCase().includes(q)) &&
+           (!region || m.region === region) &&
+           (!skill || m.skills.includes(skill));
+  });
+  document.getElementById('membersGrid').innerHTML = filtered.length
+    ? filtered.map(renderMember).join('')
+    : '<div style="grid-column:1/-1;text-align:center;color:var(--text3);padding:40px;">Aucun ambassadeur trouvé</div>';
+  document.getElementById('resultCount').textContent = `${filtered.length} ambassadeur${filtered.length>1?'s':''}`;
+  
+  // Re-animate
+  setTimeout(() => {
+    document.querySelectorAll('.member-card').forEach((c,i) => {
+      c.style.animationDelay = (i*0.03)+'s';
+      c.classList.add('fade-up');
+    });
+  }, 10);
+}
+
+function openProfile(id) {
+  const m = allMembers.find(a=>a.id===id);
+  if(!m) return;
+  const skillsHtml = m.skills.map(s=>`<span class="mc-skill" style="${skillStyle(s)};padding:5px 12px;font-size:12px;">${s}</span>`).join('');
+  document.getElementById('profileContent').innerHTML = `
+    <div class="pm-header" style="background:linear-gradient(135deg,${m.color}15,transparent);">
+      ${avatarHTML(m.photo_url, m.avatar, m.color, 'av-xl')}
+      <div style="flex:1;">
+        <div class="pm-name">${m.name}</div>
+        <div class="pm-role">🏅 ${m.role}</div>
+        <div class="pm-joined">Membre depuis ${m.joined} · ⚡ ${m.events} événements organisés</div>
+      </div>
+      <button onclick="closeProfile()" style="background:var(--ink3);border:1px solid var(--border);color:var(--text2);padding:6px 10px;border-radius:8px;cursor:pointer;font-size:13px;">✕</button>
+    </div>
+    <div class="pm-body">
+      <div class="pm-section">
+        <div class="pm-section-title">À propos</div>
+        <div class="pm-bio">${m.bio}</div>
+      </div>
+      <div class="pm-section">
+        <div class="pm-section-title">Localisation</div>
+        <div class="pm-info-row"><div class="pm-info-icon">📍</div><div class="pm-info-text">${m.city}, ${m.region}</div></div>
+      </div>
+      <div class="pm-section">
+        <div class="pm-section-title">Contact</div>
+        <div class="pm-info-row"><div class="pm-info-icon">✉️</div><div class="pm-info-text">${m.email}</div></div>
+        <div class="pm-info-row"><div class="pm-info-icon">📱</div><div class="pm-info-text">${m.phone}</div></div>
+      </div>
+      <div class="pm-section">
+        <div class="pm-section-title">Compétences</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">${skillsHtml}</div>
+      </div>
+    </div>
+    <div class="pm-actions">
+      <button class="btn btn-primary" onclick="window.location='/messages'" style="flex:1;">💬 Envoyer un message</button>
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeProfile()">Fermer</button>
+    </div>`;
+  document.getElementById('profileModal').classList.add('open');
+}
+
+function closeProfile() {
+  document.getElementById('profileModal').classList.remove('open');
+}
+
+// Load data
+fetch('/api/ambassadors').then(r=>r.json()).then(data => {
+  allMembers = data;
+  filterMembers();
+});
+</script>
+{% endblock %}

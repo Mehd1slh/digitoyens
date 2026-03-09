@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% block page_title %}Accueil{% endblock %}
+{% block page_sub %}— Bonjour, Karim {% endblock %}
+
+{% block content %}
+<style>
+.service-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 28px; }
+
+.service-cell {
+  background: var(--ink2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 24px;
+  cursor: pointer; text-decoration: none; display: block;
+  position: relative; overflow: hidden;
+  transition: all 0.25s var(--transition);
+}
+.service-cell::before {
+  content: ''; position: absolute; inset: 0;
+  opacity: 0; transition: opacity 0.25s;
+}
+.service-cell:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+.service-cell:hover::before { opacity: 1; }
+
+.sc-members::before { background: radial-gradient(ellipse at 100% 100%, rgba(124,58,237,0.15), transparent 60%); }
+.sc-events::before { background: radial-gradient(ellipse at 100% 100%, rgba(239,68,68,0.12), transparent 60%); }
+.sc-opportunities::before { background: radial-gradient(ellipse at 100% 100%, rgba(245,158,11,0.12), transparent 60%); }
+.sc-learning::before { background: radial-gradient(ellipse at 100% 100%, rgba(16,185,129,0.12), transparent 60%); }
+.sc-media::before { background: radial-gradient(ellipse at 100% 100%, rgba(6,182,212,0.12), transparent 60%); }
+.sc-messages::before { background: radial-gradient(ellipse at 100% 100%, rgba(249,115,22,0.12), transparent 60%); }
+
+.sc-icon { font-size: 32px; margin-bottom: 14px; display: block; }
+.sc-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; margin-bottom: 5px; }
+.sc-desc { font-size: 12.5px; color: var(--text2); line-height: 1.5; }
+.sc-count { position: absolute; top: 18px; right: 18px; }
+.sc-count-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 28px; color: var(--text3); }
+
+/* Quick Stats */
+.quick-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 28px; }
+.stat-card { background: var(--ink2); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+.stat-card-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 28px; margin-bottom: 2px; }
+.stat-card-lbl { font-size: 12px; color: var(--text2); }
+.stat-card-change { font-size: 11px; margin-top: 6px; }
+.change-up { color: #722d50; }
+.change-down { color: #FCA5A5; }
+
+/* Two col layout */
+.two-col { display: grid; grid-template-columns: 1fr 360px; gap: 18px; }
+.col-card { background: var(--ink2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.col-card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.col-card-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; }
+.col-card-body { padding: 16px; }
+
+/* Event item */
+.event-item { display: flex; gap: 14px; align-items: flex-start; padding: 12px; border-radius: 10px; cursor: pointer; transition: background 0.15s; margin-bottom: 4px; }
+.event-item:hover { background: var(--ink3); }
+.event-date-block { width: 42px; text-align: center; background: var(--ink3); border-radius: 8px; padding: 6px 4px; flex-shrink: 0; }
+.ev-day { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; line-height: 1; }
+.ev-mon { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); }
+.event-item-title { font-size: 13.5px; font-weight: 600; margin-bottom: 3px; }
+.event-item-loc { font-size: 11.5px; color: var(--text3); }
+
+/* Prep event */
+.prep-item { padding: 12px; border-radius: 10px; background: var(--ink3); margin-bottom: 8px; }
+.prep-step { display: flex; gap: 6px; margin-top: 8px; }
+.step-dot { width: 20px; height: 4px; border-radius: 4px; background: var(--ink2); }
+.step-dot.done { background: var(--primary); }
+.step-dot.active { background: var(--amber); }
+
+/* Message preview */
+.msg-preview { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 10px; cursor: pointer; transition: background 0.15s; }
+.msg-preview:hover { background: var(--ink3); }
+.msg-content { flex: 1; min-width: 0; }
+.msg-name { font-size: 13px; font-weight: 600; }
+.msg-text { font-size: 12px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.msg-time { font-size: 10.5px; color: var(--text3); }
+.msg-unread-dot { width: 7px; height: 7px; background: var(--primary); border-radius: 50%; flex-shrink: 0; }
+</style>
+
+<!-- Quick Stats -->
+<div class="quick-stats fade-up">
+  <div class="stat-card">
+    <div class="stat-card-num" style="color:#722d50;">120</div>
+    <div class="stat-card-lbl">Ambassadeurs actifs</div>
+    <div class="stat-card-change change-up">↑ +8 ce mois</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-num" style="color:#722d50;">6</div>
+    <div class="stat-card-lbl">Événements à venir</div>
+    <div class="stat-card-change change-up">↑ 2 nouveaux</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-num" style="color:#722d50;">3</div>
+    <div class="stat-card-lbl">Opportunités ouvertes</div>
+    <div class="stat-card-change">Deadline prochaine: 15 mars</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-num" style="color:#722d50;">2</div>
+    <div class="stat-card-lbl">Messages non lus</div>
+    <div class="stat-card-change change-down">Répondre maintenant</div>
+  </div>
+</div>
+
+<!-- Service Cells -->
+<div class="service-grid fade-up fade-up-delay-1">
+  <a href="/members" class="service-cell sc-members">
+    <div class="sc-count"><span class="sc-count-num">120</span></div>
+    <span class="sc-icon">👥</span>
+    <div class="sc-title">Espace Membres</div>
+    <div class="sc-desc">Trouvez et connectez avec les ambassadeurs de votre réseau</div>
+  </a>
+  <a href="/events" class="service-cell sc-events">
+    <div class="sc-count"><span class="sc-count-num">6</span></div>
+    <span class="sc-icon">⚡</span>
+    <div class="sc-title">Événements</div>
+    <div class="sc-desc">Organisez et participez aux événements citoyens</div>
+  </a>
+  <a href="/opportunities" class="service-cell sc-opportunities">
+    <div class="sc-count"><span class="sc-count-num">3</span></div>
+    <span class="sc-icon">🌟</span>
+    <div class="sc-title">Opportunités</div>
+    <div class="sc-desc">Formations, échanges et financements pour ambassadeurs</div>
+  </a>
+  <a href="/learning" class="service-cell sc-learning">
+    <div class="sc-count"><span class="sc-count-num">12</span></div>
+    <span class="sc-icon">🎓</span>
+    <div class="sc-title">Apprentissage</div>
+    <div class="sc-desc">Ressources, vidéos et enregistrements de réunions</div>
+  </a>
+  <a href="/media" class="service-cell sc-media">
+    <div class="sc-count"><span class="sc-count-num">3</span></div>
+    <span class="sc-icon">🎞</span>
+    <div class="sc-title">Médiathèque</div>
+    <div class="sc-desc">Photos et vidéos de tous nos événements passés</div>
+  </a>
+  <a href="/messages" class="service-cell sc-messages">
+    <div class="sc-count"><span class="sc-count-num">2</span></div>
+    <span class="sc-icon">💬</span>
+    <div class="sc-title">Messages</div>
+    <div class="sc-desc">Messagerie interne entre ambassadeurs</div>
+  </a>
+</div>
+
+<!-- Bottom Section: Events + Prep + Messages -->
+<div class="two-col fade-up fade-up-delay-2">
+  <!-- Upcoming Events -->
+  <div>
+    <div class="col-card">
+      <div class="col-card-header">
+        <span class="col-card-title">⚡ Prochains événements</span>
+        <a href="/events" style="font-size:12px;color:var(--primary-light);text-decoration:none;">Voir tout →</a>
+      </div>
+      <div class="col-card-body" id="upcomingEvents">
+        <div style="color:var(--text3);font-size:13px;text-align:center;padding:20px;">Chargement…</div>
+      </div>
+    </div>
+    
+    <!-- Prep Calendar -->
+    <div class="col-card" style="margin-top:14px;">
+      <div class="col-card-header">
+        <span class="col-card-title">📋 Préparation en cours</span>
+        <a href="/calendar" style="font-size:12px;color:var(--amber);text-decoration:none;">Calendrier prep →</a>
+      </div>
+      <div class="col-card-body" id="prepEvents">
+        <div style="color:var(--text3);font-size:13px;text-align:center;padding:20px;">Chargement…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Messages sidebar -->
+  <div>
+    <div class="col-card" style="margin-bottom:14px;">
+      <div class="col-card-header">
+        <span class="col-card-title">💬 Messages récents</span>
+        <a href="/messages" style="font-size:12px;color:var(--primary-light);text-decoration:none;">Ouvrir →</a>
+      </div>
+      <div class="col-card-body" id="recentMsgs"></div>
+    </div>
+
+    <!-- Notifications quick view -->
+    <div class="col-card">
+      <div class="col-card-header">
+        <span class="col-card-title">🔔 Notifications</span>
+        <span style="font-size:11px;color:var(--text3);">2 non lues</span>
+      </div>
+      <div class="col-card-body" id="quickNotifs"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Load upcoming events
+fetch('/api/events').then(r=>r.json()).then(evts => {
+  const upcoming = evts.filter(e=>e.type==='incoming').slice(0,4);
+  const months = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  document.getElementById('upcomingEvents').innerHTML = upcoming.map(e => {
+    const d = new Date(e.date);
+    return `<div class="event-item" onclick="window.location='/events'">
+      <div class="event-date-block">
+        <div class="ev-day">${d.getDate()}</div>
+        <div class="ev-mon">${months[d.getMonth()]}</div>
+      </div>
+      <div>
+        <div class="event-item-title">${e.title}</div>
+        <div class="event-item-loc">📍 ${e.location}</div>
+        <div style="margin-top:5px;">${e.tags.map(t=>`<span class="tag">${t}</span>`).join(' ')}</div>
+      </div>
+    </div>`;
+  }).join('');
+});
+
+// Load prep events
+fetch('/api/prep-events').then(r=>r.json()).then(data => {
+  const statusMap = {'docs_pending':'Docs manquants','admin_review':'En révision admin','confirmed':'Confirmé'};
+  const statusColor = {'docs_pending':'var(--amber)','admin_review':'var(--accent2)','confirmed':'var(--green)'};
+  document.getElementById('prepEvents').innerHTML = data.map(e => `
+    <div class="prep-item" style="margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-size:13.5px;font-weight:600;">${e.title}</div>
+        <span style="font-size:10.5px;color:${statusColor[e.status]};">● ${statusMap[e.status]||e.status}</span>
+      </div>
+      <div style="font-size:11.5px;color:var(--text3);margin-bottom:8px;">par ${e.organizer} · ${new Date(e.date).toLocaleDateString('fr-FR')}</div>
+      <div class="prep-step">
+        ${[1,2,3,4].map(s=>`<div class="step-dot ${s<e.step?'done':s===e.step?'active':''}"></div>`).join('')}
+        <span style="font-size:10.5px;color:var(--text3);margin-left:6px;">Étape ${e.step}/4</span>
+      </div>
+    </div>`).join('');
+});
+
+// Messages
+fetch('/api/messages').then(r=>r.json()).then(msgs => {
+  document.getElementById('recentMsgs').innerHTML = msgs.map(m => `
+    <div class="msg-preview" onclick="window.location='/messages'">
+      <div class="avatar av-sm" style="background:${m.color};color:white;">${m.avatar}</div>
+      <div class="msg-content">
+        <div class="msg-name">${m.from}</div>
+        <div class="msg-text">${m.preview}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <div class="msg-time">${m.time}</div>
+        ${m.unread?'<div class="msg-unread-dot"></div>':''}
+      </div>
+    </div>`).join('');
+});
+
+// Quick notifs
+fetch('/api/notifications').then(r=>r.json()).then(notifs => {
+  document.getElementById('quickNotifs').innerHTML = notifs.slice(0,4).map(n => `
+    <div style="display:flex;gap:10px;padding:8px;border-radius:8px;${!n.read?'background:rgba(124,58,237,0.06);':''} margin-bottom:4px;">
+      <span style="font-size:16px;">${n.icon}</span>
+      <div>
+        <div style="font-size:12.5px;font-weight:500;">${n.title}</div>
+        <div style="font-size:11px;color:var(--text3);">${n.time}</div>
+      </div>
+    </div>`).join('');
+});
+</script>
+{% endblock %}

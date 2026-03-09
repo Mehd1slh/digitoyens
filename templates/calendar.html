@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block page_title %}Calendrier{% endblock %}
+{% block page_sub %}— Événements & préparation{% endblock %}
+{% block content %}
+<style>
+.cal-tabs { display:flex;gap:4px;margin-bottom:24px;background:var(--ink2);border:1px solid var(--border);border-radius:12px;padding:5px;width:fit-content; }
+.ctab { padding:8px 18px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;color:var(--text2);border:none;background:none;font-family:'DM Sans',sans-serif; }
+.ctab.active { background:var(--primary);color:white; }
+.ctab:not(.active):hover { color:var(--text);background:var(--ink3); }
+
+.cal-grid { background:var(--ink2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden; }
+.cal-header { display:grid;grid-template-columns:repeat(7,1fr);background:var(--ink3); }
+.cal-day-label { padding:12px;text-align:center;font-size:11.5px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em; }
+.cal-body { display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--border); }
+.cal-cell { min-height:90px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:8px;cursor:pointer;transition:background 0.15s; }
+.cal-cell:hover { background:var(--ink3); }
+.cal-cell:nth-child(7n) { border-right:none; }
+.cal-date { font-size:13px;font-weight:600;margin-bottom:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%; }
+.cal-date.today { background:var(--primary);color:white; }
+.cal-date.other-month { color:var(--text3); }
+.cal-event-dot { font-size:10.5px;padding:2px 7px;border-radius:4px;margin-bottom:2px;truncate:clip;overflow:hidden;white-space:nowrap;text-overflow:ellipsis; }
+.cal-event-dot.main { background:rgba(124,58,237,0.25);color:#A78BFA; }
+.cal-event-dot.prep { background:rgba(245,158,11,0.2);color:#FCD34D; }
+
+.timeline { display:flex;flex-direction:column;gap:12px; }
+.tl-item { display:flex;gap:16px;align-items:flex-start; }
+.tl-date { width:60px;text-align:right;flex-shrink:0; }
+.tl-day { font-family:'Syne',sans-serif;font-weight:800;font-size:22px;line-height:1; }
+.tl-month { font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em; }
+.tl-line { width:2px;background:var(--border);flex-shrink:0;margin-top:6px;position:relative; }
+.tl-line::before { content:'';width:10px;height:10px;border-radius:50%;background:var(--primary);position:absolute;top:0;left:50%;transform:translate(-50%,0); }
+.tl-card { flex:1;background:var(--ink2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:4px; }
+.tl-title { font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px; }
+.tl-meta { font-size:12px;color:var(--text3); }
+</style>
+
+<div class="cal-tabs">
+  <button class="ctab active" onclick="switchCal('month',this)">📅 Mois</button>
+  <button class="ctab" onclick="switchCal('timeline',this)">📋 Timeline</button>
+  <button class="ctab" onclick="switchCal('prep',this)">🔧 Préparation</button>
+</div>
+
+<div id="calContent"></div>
+
+<script>
+let eventsData = [], prepData = [];
+let currentCalTab = 'month';
+
+function switchCal(tab, el) {
+  document.querySelectorAll('.ctab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  currentCalTab = tab;
+  renderCal();
+}
+
+function renderMonthCal() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const DAYS = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+  
+  // Event map
+  const evMap = {};
+  eventsData.filter(e=>e.type==='incoming').forEach(e => {
+    const d = new Date(e.date);
+    if(d.getMonth()===month && d.getFullYear()===year) {
+      const key = d.getDate();
+      if(!evMap[key]) evMap[key]=[];
+      evMap[key].push({title:e.title,type:'main'});
+    }
+  });
+  prepData.forEach(e => {
+    const d = new Date(e.date);
+    if(d.getMonth()===month && d.getFullYear()===year) {
+      const key = d.getDate();
+      if(!evMap[key]) evMap[key]=[];
+      evMap[key].push({title:e.title,type:'prep'});
+    }
+  });
+  
+  let cells = '';
+  const totalCells = Math.ceil((firstDay+daysInMonth)/7)*7;
+  for(let i=0;i<totalCells;i++) {
+    const dayNum = i - firstDay + 1;
+    const isCurrentMonth = dayNum >= 1 && dayNum <= daysInMonth;
+    const isToday = isCurrentMonth && dayNum === today.getDate();
+    const dots = (evMap[dayNum]||[]).slice(0,2).map(e=>`<div class="cal-event-dot ${e.type}">${e.title}</div>`).join('');
+    cells += `<div class="cal-cell">
+      <div class="cal-date ${isToday?'today':''} ${!isCurrentMonth?'other-month':''}">${isCurrentMonth?dayNum:''}</div>
+      ${isCurrentMonth?dots:''}
+    </div>`;
+  }
+  
+  return `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">${MONTHS_FR[month]} ${year}</div>
+      <div style="display:flex;gap:8px;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;"><div style="width:10px;height:10px;background:rgba(124,58,237,0.25);border-radius:2px;"></div>Événements confirmés</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;"><div style="width:10px;height:10px;background:rgba(245,158,11,0.2);border-radius:2px;"></div>En préparation</div>
+      </div>
+    </div>
+    <div class="cal-grid">
+      <div class="cal-header">${DAYS.map(d=>`<div class="cal-day-label">${d}</div>`).join('')}</div>
+      <div class="cal-body">${cells}</div>
+    </div>`;
+}
+
+function renderTimeline() {
+  const all = [...eventsData.filter(e=>e.type==='incoming')].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const months = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  return `<div class="timeline">${all.map(e=>{
+    const d = new Date(e.date);
+    return `<div class="tl-item">
+      <div class="tl-date"><div class="tl-day">${d.getDate()}</div><div class="tl-month">${months[d.getMonth()]} ${d.getFullYear()}</div></div>
+      <div class="tl-line"></div>
+      <div class="tl-card">
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <span class="badge badge-green">À venir</span>
+          <span class="badge ${e.category==='org'?'badge-purple':'badge-cyan'}">${e.category==='org'?'Organisation':'Ambassadeur'}</span>
+        </div>
+        <div class="tl-title">${e.title}</div>
+        <div class="tl-meta">📍 ${e.location} · 👥 ${e.attendees} participants</div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderPrepCal() {
+  const statusMap = {'docs_pending':['⏳','Documents manquants','var(--amber)'],'admin_review':['🔍','Révision admin','var(--accent2)'],'confirmed':['✅','Confirmé','var(--green)']};
+  return `
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:16px;">Événements en cours de préparation</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">
+      ${prepData.map(e=>{
+        const sm = statusMap[e.status]||['⏳','En cours','var(--text2)'];
+        return `<div class="card" style="padding:18px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;">${e.title}</div>
+            <span style="color:${sm[2]};font-size:12px;font-weight:600;">${sm[0]} ${sm[1]}</span>
+          </div>
+          <div style="font-size:12.5px;color:var(--text2);margin-bottom:12px;">Organisé par ${e.organizer} · ${new Date(e.date).toLocaleDateString('fr-FR')}</div>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
+            ${[1,2,3,4].map(s=>`<div style="flex:1;height:5px;border-radius:4px;background:${s<e.step?'var(--primary)':s===e.step?'var(--amber)':'var(--ink3)'};"></div>`).join('')}
+            <span style="font-size:11px;color:var(--text3);margin-left:4px;">Étape ${e.step}/4</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;">
+            ${e.participants.map(p=>`<span class="tag">${p.split(' ')[0]}</span>`).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function renderCal() {
+  let html = '';
+  if(currentCalTab==='month') html = renderMonthCal();
+  else if(currentCalTab==='timeline') html = renderTimeline();
+  else html = renderPrepCal();
+  document.getElementById('calContent').innerHTML = html;
+}
+
+Promise.all([fetch('/api/events').then(r=>r.json()), fetch('/api/prep-events').then(r=>r.json())])
+  .then(([evts, prep]) => { eventsData=evts; prepData=prep; renderCal(); });
+</script>
+{% endblock %}

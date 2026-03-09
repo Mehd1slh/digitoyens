@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+{% block page_title %}Créer un événement{% endblock %}
+{% block page_sub %}— Processus en 4 étapes{% endblock %}
+
+{% block content %}
+<style>
+.wizard-header {
+  background: var(--ink2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 28px; margin-bottom: 24px;
+}
+.steps-track { display: flex; align-items: center; gap: 0; margin-bottom: 24px; }
+.step-node {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1;
+  position: relative;
+}
+.step-node:not(:last-child)::after {
+  content: ''; position: absolute; top: 17px; left: 60%; width: 80%;
+  height: 2px; background: var(--border);
+  transition: background 0.4s;
+}
+.step-node.completed:not(:last-child)::after { background: var(--primary); }
+.step-circle {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; transition: all 0.3s;
+  border: 2px solid var(--border); background: var(--ink3); color: var(--text3);
+  font-family: 'Syne', sans-serif;
+}
+.step-node.active .step-circle { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 4px 12px var(--primary-glow); }
+.step-node.completed .step-circle { background: var(--green); border-color: var(--green); color: white; }
+.step-label { font-size: 11px; color: var(--text3); font-weight: 500; text-align: center; }
+.step-node.active .step-label { color: var(--primary-light); font-weight: 600; }
+.step-node.completed .step-label { color: var(--green); }
+
+.wizard-body { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+.wizard-main { background: var(--ink2); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; }
+.wizard-sidebar { display: flex; flex-direction: column; gap: 14px; }
+
+.step-content { display: none; }
+.step-content.active { display: block; animation: fadeUp 0.35s var(--transition); }
+
+.step-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; margin-bottom: 4px; }
+.step-sub { font-size: 13.5px; color: var(--text2); margin-bottom: 24px; }
+
+/* Ambassador picker */
+.amb-search { margin-bottom: 14px; }
+.amb-list { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; max-height: 300px; overflow-y: auto; }
+.amb-pick-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px;
+  background: var(--ink3); border: 1px solid var(--border); border-radius: 10px;
+  cursor: pointer; transition: all 0.2s;
+}
+.amb-pick-item:hover { border-color: var(--border2); }
+.amb-pick-item.selected { background: rgba(124,58,237,0.15); border-color: var(--primary); }
+.amb-pick-check { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); transition: all 0.2s; flex-shrink: 0; margin-left: auto; }
+.amb-pick-item.selected .amb-pick-check { background: var(--primary); border-color: var(--primary); display: flex; align-items: center; justify-content: center; }
+.amb-pick-item.selected .amb-pick-check::after { content: '✓'; font-size: 10px; color: white; }
+
+/* Docs download */
+.doc-item {
+  display: flex; align-items: center; gap: 14px; padding: 16px;
+  background: var(--ink3); border: 1px solid var(--border); border-radius: 12px;
+  margin-bottom: 10px; transition: all 0.2s;
+}
+.doc-item:hover { border-color: var(--border2); }
+.doc-icon { width: 40px; height: 40px; border-radius: 10px; background: rgba(124,58,237,0.15); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.doc-name { font-size: 13.5px; font-weight: 600; margin-bottom: 2px; }
+.doc-desc { font-size: 11.5px; color: var(--text3); }
+.doc-dl { margin-left: auto; flex-shrink: 0; }
+.doc-status { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border); margin-left: 10px; flex-shrink: 0; cursor: pointer; transition: all 0.2s; }
+.doc-status.done { background: var(--green); border-color: var(--green); display: flex; align-items: center; justify-content: center; }
+
+/* Launch step */
+.launch-checklist { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+.check-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--ink3); border-radius: 10px; }
+.check-icon { font-size: 18px; }
+.check-text { font-size: 13.5px; font-weight: 500; }
+.check-status { margin-left: auto; font-size: 16px; }
+
+/* Sidebar widgets */
+.side-widget { background: var(--ink2); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+.side-widget-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; margin-bottom: 14px; }
+.preview-field { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.pf-label { font-size: 11.5px; color: var(--text3); }
+.pf-value { font-size: 12.5px; font-weight: 500; text-align: right; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.selected-ambs { display: flex; flex-wrap: wrap; gap: 6px; }
+.sel-amb { display: flex; align-items: center; gap: 5px; padding: 3px 8px; background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3); border-radius: 20px; font-size: 11.5px; }
+</style>
+
+<!-- Stepper Header -->
+<div class="wizard-header">
+  <div class="steps-track" id="stepsTrack">
+    <div class="step-node active" id="sn1">
+      <div class="step-circle">1</div>
+      <div class="step-label">Description</div>
+    </div>
+    <div class="step-node" id="sn2">
+      <div class="step-circle">2</div>
+      <div class="step-label">Équipe</div>
+    </div>
+    <div class="step-node" id="sn3">
+      <div class="step-circle">3</div>
+      <div class="step-label">Documents</div>
+    </div>
+    <div class="step-node" id="sn4">
+      <div class="step-circle">4</div>
+      <div class="step-label">Lancement</div>
+    </div>
+  </div>
+</div>
+
+<!-- Wizard Body -->
+<div class="wizard-body">
+  <div class="wizard-main">
+
+    <!-- STEP 1: Description -->
+    <div class="step-content active" id="step1">
+      <div class="step-title">📋 Description de l'événement</div>
+      <div class="step-sub">Remplissez les informations de base de votre événement</div>
+
+      <div class="input-group">
+        <label>Titre de l'événement *</label>
+        <input class="input" type="text" placeholder="Ex: Atelier Citoyenneté Active" id="evTitle" oninput="updatePreview()">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="input-group">
+          <label>Date *</label>
+          <input class="input" type="date" id="evDate" oninput="updatePreview()">
+        </div>
+        <div class="input-group">
+          <label>Heure</label>
+          <input class="input" type="time" id="evTime" value="14:00">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="input-group">
+          <label>Ville *</label>
+          <input class="input" type="text" placeholder="Marrakech" id="evCity" oninput="updatePreview()">
+        </div>
+        <div class="input-group">
+          <label>Région</label>
+          <select class="input" id="evRegion" onchange="updatePreview()">
+            <option>Marrakech-Safi</option>
+            <option>Casablanca-Settat</option>
+            <option>Rabat-Salé-Kénitra</option>
+            <option>Fès-Meknès</option>
+            <option>Souss-Massa</option>
+          </select>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Lieu précis</label>
+        <input class="input" type="text" placeholder="Ex: Maison des Jeunes de Guéliz">
+      </div>
+      <div class="input-group">
+        <label>Description *</label>
+        <textarea class="input" placeholder="Décrivez l'objectif, le déroulement et l'impact attendu de votre événement…" rows="4" id="evDesc" oninput="updatePreview()"></textarea>
+      </div>
+      <div class="input-group">
+        <label>Nombre de participants attendus</label>
+        <input class="input" type="number" placeholder="50" id="evCount" oninput="updatePreview()">
+      </div>
+      <div class="input-group">
+        <label>Tags (séparés par des virgules)</label>
+        <input class="input" type="text" placeholder="Jeunesse, Formation, Civic" id="evTags">
+      </div>
+    </div>
+
+    <!-- STEP 2: Team -->
+    <div class="step-content" id="step2">
+      <div class="step-title">👥 Sélectionner l'équipe</div>
+      <div class="step-sub">Ajoutez les ambassadeurs qui co-organiseront cet événement</div>
+      <div class="amb-search">
+        <div style="display:flex;align-items:center;gap:8px;background:var(--ink3);border:1px solid var(--border);border-radius:10px;padding:9px 14px;">
+          <span>🔍</span>
+          <input type="text" placeholder="Chercher un ambassadeur…" style="background:none;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;width:100%;" oninput="filterAmbPickers(this.value)">
+        </div>
+      </div>
+      <div class="amb-list" id="ambPickList"></div>
+    </div>
+
+    <!-- STEP 3: Documents -->
+    <div class="step-content" id="step3">
+      <div class="step-title">📄 Documents à compléter</div>
+      <div class="step-sub">Téléchargez, remplissez et re-uploadez les 3 documents requis</div>
+
+      <div class="doc-item">
+        <div class="doc-icon">⚖️</div>
+        <div style="flex:1;">
+          <div class="doc-name">Dossier Juridique</div>
+          <div class="doc-desc">Autorisation légale et cadre réglementaire de l'événement</div>
+        </div>
+        <button class="btn btn-ghost btn-sm doc-dl">⬇ Télécharger</button>
+        <div class="doc-status" id="doc1" onclick="toggleDocDone('doc1')" title="Marquer comme complété"></div>
+      </div>
+
+      <div class="doc-item">
+        <div class="doc-icon">📸</div>
+        <div style="flex:1;">
+          <div class="doc-name">Formulaire Média</div>
+          <div class="doc-desc">Informations pour la couverture photo/vidéo de l'événement</div>
+        </div>
+        <button class="btn btn-ghost btn-sm doc-dl">⬇ Télécharger</button>
+        <div class="doc-status" id="doc2" onclick="toggleDocDone('doc2')" title="Marquer comme complété"></div>
+      </div>
+
+      <div class="doc-item">
+        <div class="doc-icon">🤝</div>
+        <div style="flex:1;">
+          <div class="doc-name">Demande Partenaires/Autorités</div>
+          <div class="doc-desc">Template de demande officielle aux institutions et partenaires</div>
+        </div>
+        <button class="btn btn-ghost btn-sm doc-dl">⬇ Télécharger</button>
+        <div class="doc-status" id="doc3" onclick="toggleDocDone('doc3')" title="Marquer comme complété"></div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);border-radius:10px;font-size:13px;color:var(--text2);">
+        💡 Cliquez sur le cercle à droite de chaque document une fois que vous l'avez complété et uploadé.
+      </div>
+    </div>
+
+    <!-- STEP 4: Launch -->
+    <div class="step-content" id="step4">
+      <div class="step-title">🚀 Lancer l'organisation</div>
+      <div class="step-sub">Vérifiez tout est en ordre avant de notifier les ambassadeurs</div>
+
+      <div class="launch-checklist">
+        <div class="check-item"><span class="check-icon">📋</span><span class="check-text">Description complète</span><span class="check-status">✅</span></div>
+        <div class="check-item"><span class="check-icon">👥</span><span class="check-text" id="teamCheckText">Équipe sélectionnée</span><span class="check-status" id="teamCheckIcon">⏳</span></div>
+        <div class="check-item"><span class="check-icon">📄</span><span class="check-text" id="docsCheckText">Documents uploadés</span><span class="check-status" id="docsCheckIcon">⏳</span></div>
+      </div>
+
+      <div style="background:var(--ink3);border-radius:12px;padding:18px;margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">📢 Une fois lancé :</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.7;">
+          • Tous les ambassadeurs recevront une notification<br>
+          • Ils pourront choisir de <strong>participer</strong> ou <strong>décliner</strong><br>
+          • L'événement sera ajouté au <strong>calendrier de préparation</strong><br>
+          • L'admin sera notifié pour validation
+        </div>
+      </div>
+
+      <button class="btn btn-primary w-full" style="justify-content:center;padding:14px;font-size:15px;" onclick="launchEvent()">
+        🚀 Lancer l'organisation de l'événement
+      </button>
+    </div>
+
+    <!-- Navigation buttons -->
+    <div style="display:flex;gap:10px;margin-top:28px;padding-top:20px;border-top:1px solid var(--border);">
+      <button class="btn btn-ghost" id="prevBtn" onclick="prevStep()" style="display:none;">← Précédent</button>
+      <div style="flex:1;"></div>
+      <button class="btn btn-primary" id="nextBtn" onclick="nextStep()">Suivant →</button>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="wizard-sidebar">
+    <!-- Live Preview -->
+    <div class="side-widget">
+      <div class="side-widget-title">👁 Aperçu</div>
+      <div id="previewCard" style="background:var(--ink3);border-radius:10px;padding:14px;">
+        <div id="previewImg" style="height:80px;border-radius:8px;background:linear-gradient(135deg,#1e1b4b,#4c1d95);display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:10px;">🎯</div>
+        <div id="previewTitle" style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:6px;color:var(--text3);">Titre de votre événement</div>
+        <div id="previewMeta" style="font-size:11.5px;color:var(--text3);">📅 Date · 📍 Ville</div>
+      </div>
+    </div>
+
+    <!-- Selected Team -->
+    <div class="side-widget">
+      <div class="side-widget-title">👥 Équipe (<span id="teamCount">0</span>)</div>
+      <div class="selected-ambs" id="selectedAmbsPreview">
+        <span style="font-size:12px;color:var(--text3);">Aucun ambassadeur sélectionné</span>
+      </div>
+    </div>
+
+    <!-- Docs status -->
+    <div class="side-widget">
+      <div class="side-widget-title">📄 Documents</div>
+      <div id="docsStatusPreview">
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12.5px;"><span>Dossier Juridique</span><span id="ds1" style="color:var(--text3);">⏳</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12.5px;"><span>Formulaire Média</span><span id="ds2" style="color:var(--text3);">⏳</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12.5px;"><span>Demande Partenaires</span><span id="ds3" style="color:var(--text3);">⏳</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Success overlay -->
+<div class="modal-overlay" id="successModal">
+  <div class="modal" style="text-align:center;max-width:440px;">
+    <div style="font-size:64px;margin-bottom:16px;">🎉</div>
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;margin-bottom:8px;">Événement lancé!</div>
+    <div style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:24px;">Tous les ambassadeurs ont été notifiés. Votre événement est maintenant dans le calendrier de préparation.</div>
+    <a href="/calendar" class="btn btn-primary" style="justify-content:center;width:100%;margin-bottom:10px;">📅 Voir le calendrier</a>
+    <a href="/events" class="btn btn-ghost" style="justify-content:center;width:100%;">← Retour aux événements</a>
+  </div>
+</div>
+
+<script>
+let currentStep = 1;
+let selectedAmbs = new Set();
+let docsDone = new Set();
+let allAmbs = [];
+
+// Step navigation
+function goToStep(n) {
+  // Update content
+  document.querySelectorAll('.step-content').forEach(s=>s.classList.remove('active'));
+  document.getElementById('step'+n).classList.add('active');
+  
+  // Update nodes
+  for(let i=1;i<=4;i++){
+    const node = document.getElementById('sn'+i);
+    node.classList.remove('active','completed');
+    if(i < n) node.classList.add('completed');
+    else if(i === n) node.classList.add('active');
+  }
+  
+  // Update buttons
+  document.getElementById('prevBtn').style.display = n>1?'flex':'none';
+  document.getElementById('nextBtn').textContent = n===4 ? '(voir ci-dessus)' : 'Suivant →';
+  if(n===4) document.getElementById('nextBtn').style.display='none';
+  else document.getElementById('nextBtn').style.display='flex';
+  
+  currentStep = n;
+  
+  // Step-specific init
+  if(n===2) loadAmbPickers();
+  if(n===4) checkLaunchReady();
+}
+
+function nextStep() { if(currentStep < 4) goToStep(currentStep+1); }
+function prevStep() { if(currentStep > 1) goToStep(currentStep-1); }
+
+// Preview
+function updatePreview() {
+  const title = document.getElementById('evTitle').value;
+  const date = document.getElementById('evDate').value;
+  const city = document.getElementById('evCity').value;
+  document.getElementById('previewTitle').textContent = title || 'Titre de votre événement';
+  document.getElementById('previewTitle').style.color = title ? 'var(--text)' : 'var(--text3)';
+  const d = date ? new Date(date) : null;
+  const months = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  document.getElementById('previewMeta').textContent = (d?`📅 ${d.getDate()} ${months[d.getMonth()]}`:' 📅 Date') + (city?` · 📍 ${city}`:' · 📍 Ville');
+}
+
+// Ambassador picker
+function loadAmbPickers() {
+  if(allAmbs.length > 0) { renderAmbPickers(allAmbs); return; }
+  fetch('/api/ambassadors').then(r=>r.json()).then(data => {
+    allAmbs = data;
+    renderAmbPickers(data);
+  });
+}
+
+function renderAmbPickers(ambs) {
+  document.getElementById('ambPickList').innerHTML = ambs.map(a => `
+    <div class="amb-pick-item ${selectedAmbs.has(a.id)?'selected':''}" id="ap${a.id}" onclick="toggleAmb(${a.id},'${a.name}','${a.avatar}','${a.color}')">
+      <div class="avatar av-sm" style="background:${a.color};color:white;">${a.avatar}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.name}</div>
+        <div style="font-size:10.5px;color:var(--text3);">${a.city}</div>
+      </div>
+      <div class="amb-pick-check ${selectedAmbs.has(a.id)?'selected':''}"></div>
+    </div>`).join('');
+}
+
+function filterAmbPickers(q) {
+  const filtered = allAmbs.filter(a => a.name.toLowerCase().includes(q.toLowerCase()));
+  renderAmbPickers(filtered);
+}
+
+function toggleAmb(id, name, avatar, color) {
+  if(selectedAmbs.has(id)) selectedAmbs.delete(id);
+  else selectedAmbs.add(id);
+  
+  // Re-render
+  const el = document.getElementById('ap'+id);
+  el.classList.toggle('selected');
+  el.querySelector('.amb-pick-check').classList.toggle('selected');
+  
+  // Update sidebar
+  const preview = document.getElementById('selectedAmbsPreview');
+  document.getElementById('teamCount').textContent = selectedAmbs.size;
+  if(selectedAmbs.size === 0) {
+    preview.innerHTML = '<span style="font-size:12px;color:var(--text3);">Aucun ambassadeur sélectionné</span>';
+  } else {
+    preview.innerHTML = allAmbs.filter(a=>selectedAmbs.has(a.id)).map(a =>
+      `<div class="sel-amb"><div class="avatar" style="width:18px;height:18px;font-size:7px;background:${a.color};color:white;">${a.avatar}</div>${a.name.split(' ')[0]}</div>`
+    ).join('');
+  }
+}
+
+// Docs
+function toggleDocDone(id) {
+  const el = document.getElementById(id);
+  const num = id.replace('doc','');
+  if(docsDone.has(id)) {
+    docsDone.delete(id);
+    el.classList.remove('done');
+    el.innerHTML = '';
+    document.getElementById('ds'+num).textContent = '⏳';
+    document.getElementById('ds'+num).style.color = 'var(--text3)';
+  } else {
+    docsDone.add(id);
+    el.classList.add('done');
+    el.innerHTML = '<span style="font-size:10px;color:white;">✓</span>';
+    document.getElementById('ds'+num).textContent = '✅';
+    document.getElementById('ds'+num).style.color = 'var(--green)';
+  }
+}
+
+function checkLaunchReady() {
+  const teamOk = selectedAmbs.size > 0;
+  const docsOk = docsDone.size >= 3;
+  document.getElementById('teamCheckIcon').textContent = teamOk ? '✅' : '⏳';
+  document.getElementById('docsCheckIcon').textContent = docsOk ? '✅' : '⏳';
+  document.getElementById('teamCheckText').textContent = teamOk ? `${selectedAmbs.size} ambassadeur(s) sélectionné(s)` : 'Équipe sélectionnée';
+  document.getElementById('docsCheckText').textContent = docsOk ? 'Tous les documents complétés' : `${docsDone.size}/3 documents complétés`;
+}
+
+function launchEvent() {
+  document.getElementById('successModal').classList.add('open');
+}
+</script>
+{% endblock %}

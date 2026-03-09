@@ -1,0 +1,448 @@
+{% extends "base.html" %}
+{% block page_title %}Carte{% endblock %}
+{% block page_sub %}— Ambassadeurs, événements & opportunités{% endblock %}
+{% block content %}
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+
+<style>
+/* ── Layout ── */
+.map-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 16px;
+  height: calc(100vh - 140px);
+}
+
+/* ── Sidebar ── */
+.map-sidebar {
+  background: var(--surface, #fff);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.map-sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--ink2);
+}
+.map-filter-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  background: var(--surface, #fff);
+  color: var(--text2);
+  transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.map-filter-btn:hover { background: var(--ink3); color: var(--text); }
+.map-filter-btn.active {
+  background: #722d50;
+  color: white;
+  border-color: #722d50;
+  box-shadow: 0 2px 8px rgba(114,45,80,0.3);
+}
+
+/* ── Sidebar list ── */
+.map-items { flex: 1; overflow-y: auto; padding: 10px; background: var(--surface, #fff); }
+.map-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-bottom: 4px;
+}
+.map-item:hover { background: var(--ink3); }
+.map-item.highlighted { background: rgba(114,45,80,0.08); border-left: 2px solid #722d50; padding-left: 8px; }
+.map-pin-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.map-item-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; color: var(--text); }
+.map-item-loc { font-size: 11.5px; color: var(--text3); }
+.map-item-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 20px;
+  margin-top: 4px;
+  letter-spacing: 0.02em;
+}
+
+/* ── Map container ── */
+.map-container {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+#leafletMap {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Custom Leaflet marker pins ── */
+.lf-pin {
+  width: 34px;
+  height: 34px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255,255,255,0.8);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.22);
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.lf-pin:hover {
+  transform: rotate(-45deg) scale(1.18);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.28);
+}
+.lf-pin-inner { transform: rotate(45deg); font-size: 14px; line-height: 1; }
+
+/* ── Leaflet popup overrides ── */
+.leaflet-popup-content-wrapper {
+  background: #fff !important;
+  border: 1px solid rgba(0,0,0,0.09) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.13) !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+.leaflet-popup-content { margin: 0 !important; width: auto !important; min-width: 190px; }
+.leaflet-popup-tip-container { margin-top: -1px; }
+.leaflet-popup-tip { background: #fff !important; box-shadow: none !important; }
+.leaflet-popup-close-button { color: #94a3b8 !important; font-size: 18px !important; padding: 6px 8px !important; top: 4px !important; right: 4px !important; }
+.popup-inner { padding: 13px 15px 11px; }
+.popup-type { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+.popup-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13.5px; color: #0F172A; margin-bottom: 4px; line-height: 1.3; }
+.popup-sub { font-size: 11.5px; color: #64748b; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+
+/* Leaflet zoom controls */
+.leaflet-control-zoom a {
+  color: #475569 !important;
+  border-color: #e2e8f0 !important;
+}
+.leaflet-control-zoom a:hover { background: #f8fafc !important; }
+.leaflet-control-attribution { font-size: 9px !important; opacity: 0.55; }
+</style>
+
+<div class="map-layout">
+  <!-- Sidebar -->
+  <div class="map-sidebar">
+    <div class="map-sidebar-header">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:10px;">Filtres</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        <button class="map-filter-btn active" id="btn-ambassadors"   onclick="toggleFilter('ambassadors',this)">👥 Ambassadeurs</button>
+        <button class="map-filter-btn active" id="btn-events"        onclick="toggleFilter('events',this)">⚡ Événements</button>
+        <button class="map-filter-btn active" id="btn-opportunities" onclick="toggleFilter('opportunities',this)">🌟 Opportunités</button>
+      </div>
+      <div style="margin-top:11px;">
+        <span id="countBadge" style="font-size:11.5px;color:var(--text3);"></span>
+      </div>
+    </div>
+    <div class="map-items" id="mapList">
+      <div style="padding:30px 20px;text-align:center;color:var(--text3);font-size:13px;">
+        <div style="font-size:28px;margin-bottom:8px;">🗺️</div>
+        Chargement…
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet Map -->
+  <div class="map-container">
+    <div id="leafletMap"></div>
+  </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+<script>
+/* ─── Real geographic coordinates for Moroccan cities ─── */
+const CITY_COORDS = {
+  'Marrakech':    [31.6295,  -7.9811],
+  'Casablanca':   [33.5731,  -7.5898],
+  'Rabat':        [34.0132,  -6.8326],
+  'Fes':          [34.0181,  -5.0078],
+  'Agadir':       [30.4278,  -9.5981],
+  'Tanger':       [35.7595,  -5.8340],
+  'Oujda':        [34.6814,  -1.9086],
+  'Essaouira':    [31.5085,  -9.7595],
+  'Meknès':       [33.8935,  -5.5473],
+  'Laâyoune':     [27.1418, -13.1800],
+  'Dakhla':       [23.6847, -15.9570],
+  'Nador':        [35.1681,  -2.9287],
+  'Tetouan':      [35.5785,  -5.3684],
+  'Kenitra':      [34.2610,  -6.5802],
+  'Beni Mellal':  [32.3373,  -6.3498],
+  'Safi':         [32.2994,  -9.2372],
+  'El Jadida':    [33.2549,  -8.5076],
+  'Errachidia':   [31.9314,  -4.4261],
+  'Ouarzazate':   [30.9335,  -6.9370],
+  'Ifrane':       [33.5228,  -5.1078],
+  'Settat':       [33.0014,  -7.6196],
+  'Berrechid':    [33.2658,  -7.5878],
+  'Sidi Slimane': [34.2600,  -5.9200],
+  'Sale':         [34.0385,  -6.8155],
+  'Tiznit':       [29.6933,  -9.7245]
+};
+
+function resolveCoords(locationStr) {
+  if (!locationStr) return null;
+  const city = locationStr.split(',')[0].trim();
+  return CITY_COORDS[city] || null;
+}
+
+/* ─── Init Leaflet ─── */
+const map = L.map('leafletMap', {
+  center: [31.7917, -7.0926],
+  zoom: 6,
+  minZoom: 5,
+  maxZoom: 16,
+  zoomControl: true,
+});
+
+// CartoDB Positron — clean light tiles that match the UI perfectly
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>',
+  subdomains: 'abcd',
+  maxZoom: 18,
+}).addTo(map);
+
+/* ─── State ─── */
+const FILTERS = { ambassadors: true, events: true, opportunities: true };
+let allAmbs = [], allEvts = [], allOpps = [];
+
+const layerGroups = {
+  ambassadors:   L.layerGroup().addTo(map),
+  events:        L.layerGroup().addTo(map),
+  opportunities: L.layerGroup().addTo(map),
+};
+
+/* ─── Toggle filter ─── */
+function toggleFilter(type, el) {
+  FILTERS[type] = !FILTERS[type];
+  el.classList.toggle('active');
+  FILTERS[type] ? layerGroups[type].addTo(map) : map.removeLayer(layerGroups[type]);
+  renderList();
+}
+
+/* ─── Custom HTML marker ─── */
+function makeIcon(emoji, color) {
+  return L.divIcon({
+    className: '',
+    html: `<div class="lf-pin" style="background:${color};"><span class="lf-pin-inner">${emoji}</span></div>`,
+    iconSize:    [34, 34],
+    iconAnchor:  [17, 34],
+    popupAnchor: [0, -36],
+  });
+}
+
+/* ─── Popup builders ─── */
+function ambPopup(a) {
+  return `<div class="popup-inner">
+    <div class="popup-type" style="color:${a.color||'#722d50'};">👥 Ambassadeur</div>
+    <div class="popup-title">${a.name}</div>
+    <div class="popup-sub">📍 ${a.city}</div>
+  </div>`;
+}
+function evtPopup(e) {
+  return `<div class="popup-inner">
+    <div class="popup-type" style="color:#722d50;">⚡ Événement</div>
+    <div class="popup-title">${e.title}</div>
+    <div class="popup-sub">📍 ${e.location}</div>
+    ${e.date ? `<div class="popup-sub">📅 ${e.date}</div>` : ''}
+  </div>`;
+}
+function oppPopup(o) {
+  return `<div class="popup-inner">
+    <div class="popup-type" style="color:#D97706;">🌟 Opportunité</div>
+    <div class="popup-title">${o.title}</div>
+    <div class="popup-sub">📍 ${o.location || o.city || ''}</div>
+  </div>`;
+}
+
+/* ─── Build all markers ─── */
+function renderMarkers() {
+  layerGroups.ambassadors.clearLayers();
+  layerGroups.events.clearLayers();
+  layerGroups.opportunities.clearLayers();
+
+  allAmbs.forEach(a => {
+    const coords = CITY_COORDS[a.city];
+    if (!coords) return;
+    const m = L.marker(coords, { icon: makeIcon('👤', a.color || '#722d50') });
+    m.bindPopup(ambPopup(a), { maxWidth: 230 });
+    m.on('click', () => highlightItem('amb-' + a.id));
+    layerGroups.ambassadors.addLayer(m);
+  });
+
+  allEvts
+    .filter(e => e.type === 'incoming' || e.type === 'upcoming' || !e.type)
+    .forEach(e => {
+      const coords = resolveCoords(e.location);
+      if (!coords) return;
+      const m = L.marker(coords, { icon: makeIcon('⚡', '#722d50') });
+      m.bindPopup(evtPopup(e), { maxWidth: 230 });
+      m.on('click', () => highlightItem('evt-' + e.id));
+      layerGroups.events.addLayer(m);
+    });
+
+  allOpps.forEach(o => {
+    const coords = resolveCoords(o.location || o.city);
+    if (!coords) return;
+    const m = L.marker(coords, { icon: makeIcon('🌟', '#D97706') });
+    m.bindPopup(oppPopup(o), { maxWidth: 230 });
+    m.on('click', () => highlightItem('opp-' + o.id));
+    layerGroups.opportunities.addLayer(m);
+  });
+
+  // Respect current filter states
+  Object.keys(FILTERS).forEach(type => {
+    if (!FILTERS[type]) map.removeLayer(layerGroups[type]);
+  });
+
+  renderList();
+}
+
+/* ─── Sidebar list ─── */
+function renderList() {
+  const list = document.getElementById('mapList');
+  let html = '';
+  let count = 0;
+
+  if (FILTERS.ambassadors) {
+    allAmbs.forEach(a => {
+      if (!CITY_COORDS[a.city]) return;
+      count++;
+      const coords = CITY_COORDS[a.city];
+      html += `<div class="map-item" id="amb-${a.id}" onclick="flyTo([${coords}],'amb-${a.id}')">
+        <div class="map-pin-icon" style="background:${a.color}22;border:1.5px solid ${a.color}55;">
+          <span>👤</span>
+        </div>
+        <div>
+          <div class="map-item-name">${a.name}</div>
+          <div class="map-item-loc">📍 ${a.city}</div>
+          <span class="map-item-tag" style="background:${a.color}18;color:${a.color};">Ambassadeur</span>
+        </div>
+      </div>`;
+    });
+  }
+
+  if (FILTERS.events) {
+    allEvts.filter(e => e.type === 'incoming' || e.type === 'upcoming' || !e.type).forEach(e => {
+      const coords = resolveCoords(e.location);
+      if (!coords) return;
+      count++;
+      html += `<div class="map-item" id="evt-${e.id}" onclick="flyTo([${coords}],'evt-${e.id}')">
+        <div class="map-pin-icon" style="background:rgba(114,45,80,0.1);border:1.5px solid rgba(114,45,80,0.22);">
+          <span>⚡</span>
+        </div>
+        <div>
+          <div class="map-item-name">${e.title}</div>
+          <div class="map-item-loc">📍 ${e.location}${e.date ? ' · ' + e.date : ''}</div>
+          <span class="map-item-tag" style="background:rgba(114,45,80,0.1);color:#722d50;">Événement</span>
+        </div>
+      </div>`;
+    });
+  }
+
+  if (FILTERS.opportunities) {
+    allOpps.forEach(o => {
+      const coords = resolveCoords(o.location || o.city);
+      if (!coords) return;
+      count++;
+      html += `<div class="map-item" id="opp-${o.id}" onclick="flyTo([${coords}],'opp-${o.id}')">
+        <div class="map-pin-icon" style="background:rgba(217,119,6,0.1);border:1.5px solid rgba(217,119,6,0.22);">
+          <span>🌟</span>
+        </div>
+        <div>
+          <div class="map-item-name">${o.title}</div>
+          <div class="map-item-loc">📍 ${o.location || o.city || ''}</div>
+          <span class="map-item-tag" style="background:rgba(217,119,6,0.1);color:#D97706;">Opportunité</span>
+        </div>
+      </div>`;
+    });
+  }
+
+  list.innerHTML = html || `<div style="padding:30px 20px;text-align:center;color:var(--text3);font-size:13px;">
+    <div style="font-size:28px;margin-bottom:8px;">🔍</div>
+    Aucun élément visible
+  </div>`;
+
+  document.getElementById('countBadge').textContent =
+    count + ' élément' + (count !== 1 ? 's' : '') + ' sur la carte';
+}
+
+/* ─── Fly to location ─── */
+function flyTo(coords, itemId) {
+  map.flyTo(coords, 12, { animate: true, duration: 0.9 });
+  highlightItem(itemId);
+}
+
+function highlightItem(id) {
+  document.querySelectorAll('.map-item').forEach(el => el.classList.remove('highlighted'));
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.add('highlighted');
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+/* ─── Load data from API (with demo fallback) ─── */
+Promise.all([
+  fetch('/api/ambassadors').then(r => r.json()),
+  fetch('/api/events').then(r => r.json()),
+  fetch('/api/opportunities').then(r => r.json()),
+]).then(([a, e, o]) => {
+  allAmbs = a; allEvts = e; allOpps = o;
+  renderMarkers();
+}).catch(() => {
+  // Demo data — replace with real API responses
+  allAmbs = [
+    { id:1, name:'Karim Alaoui',       city:'Marrakech',  color:'#722d50', avatar:'KA' },
+    { id:2, name:'Sara Benali',         city:'Casablanca', color:'#0ea5e9', avatar:'SB' },
+    { id:3, name:'Youssef El Idrissi',  city:'Rabat',      color:'#10b981', avatar:'YE' },
+    { id:4, name:'Fatima Zahra Chafik', city:'Fès',        color:'#f59e0b', avatar:'FZ' },
+    { id:5, name:'Amine Tazi',          city:'Agadir',     color:'#8b5cf6', avatar:'AT' },
+    { id:6, name:'Nadia Chraibi',       city:'Tanger',     color:'#ef4444', avatar:'NC' },
+    { id:7, name:'Mehdi Ouali',         city:'Oujda',      color:'#06b6d4', avatar:'MO' },
+    { id:8, name:'Layla Bensouda',      city:'Meknès',     color:'#84cc16', avatar:'LB' },
+  ];
+  allEvts = [
+    { id:1, title:'Forum Citoyens Marrakech', location:'Marrakech',  date:'15 Avr 2025', type:'incoming' },
+    { id:2, title:'Hackathon Impact Casa',    location:'Casablanca', date:'22 Avr 2025', type:'incoming' },
+    { id:3, title:'Atelier Jeunesse Rabat',   location:'Rabat',      date:'5 Mai 2025',  type:'incoming' },
+    { id:4, title:'Caravane Solidaire',       location:'Agadir',     date:'12 Mai 2025', type:'incoming' },
+    { id:5, title:'Summit Leadership Tanger', location:'Tanger',     date:'20 Mai 2025', type:'incoming' },
+  ];
+  allOpps = [
+    { id:1, title:'Programme Leadership 2025', city:'Casablanca' },
+    { id:2, title:'Bourse Erasmus+ Maroc',      city:'Rabat'      },
+    { id:3, title:'Résidence Artistique',       city:'Essaouira'  },
+    { id:4, title:'Stage ONU Genève',           city:'Fès'        },
+  ];
+  renderMarkers();
+});
+</script>
+{% endblock %}
