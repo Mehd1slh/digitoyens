@@ -117,3 +117,4 @@ The prototype was designed to address the need for a structured digital space wh
 ---
 
 **Developed during the Citoyens Commun'ITy Hackathon 2026.**
+![les citoyens](static/citoyens.JPG)
