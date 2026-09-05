@@ -4,11 +4,11 @@ This repository contains the prototype developed for the **Commun'ITy Hackathon*
 
 ---
 
-### 📋 Project Context
+###  Project Context
 
 The prototype was designed to address the need for a structured digital space where ambassadors can connect, organize civic events, and access training resources. It focuses on streamlining the **Ambassador Lifecycle**, from initial application to active participation and reporting.
 
-### 🚀 Key Features
+###  Key Features
 
 - **Ambassador Dashboard**: A personalized home base for members to view quick stats, upcoming events, and internal messages.
     
@@ -25,7 +25,7 @@ The prototype was designed to address the need for a structured digital space wh
 
 ---
 
-### 🛠 Tech Stack
+###  Tech Stack
 
 - **Backend**: Python 3.x with the **Flask** framework.
     
@@ -42,7 +42,7 @@ The prototype was designed to address the need for a structured digital space wh
 
 ---
 
-### 📂 Repository Structure
+###  Repository Structure
 
 - `app.py`: The core Flask application containing routing logic and dummy data for ambassadors, events, and notifications.
     
@@ -83,7 +83,7 @@ The prototype was designed to address the need for a structured digital space wh
 
 ---
 
-### 🔧 Installation & Setup
+###  Installation & Setup
 
 1. **Clone the repository**:
     
